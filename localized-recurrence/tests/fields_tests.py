@@ -1,12 +1,12 @@
+import unittest
 from datetime import timedelta
 
 from mock import MagicMock
 
 from ..fields import DurationField, parse_timedelta_string
-from ambition.utils.test import AmbitionTestCase
 
 
-class Test_DurationField_to_python(AmbitionTestCase):
+class Test_DurationField_to_python(unittest.TestCase):
     def setUp(self):
         """Create a mock of the DurationField class and pin to_python to it.
         """
@@ -57,7 +57,7 @@ class Test_DurationField_to_python(AmbitionTestCase):
             self.df.to_python(td_in)
 
 
-class Test_DurationField_get_prep_value(AmbitionTestCase):
+class Test_DurationField_get_prep_value(unittest.TestCase):
     def setUp(self):
         """Create a mock of the DurationField class and pin get_prep_value.
         """
@@ -86,7 +86,7 @@ class Test_DurationField_get_prep_value(AmbitionTestCase):
         self.assertEqual(td_out, td_in)
 
 
-class Test_DurationField_value_to_string(AmbitionTestCase):
+class Test_DurationField_value_to_string(unittest.TestCase):
     def setUp(self):
         """Create a mock of the DurationField class and pin value_to_string to it.
 
@@ -118,7 +118,7 @@ class Test_DurationField_value_to_string(AmbitionTestCase):
         self.assertEqual(out_td, in_td)
 
 
-class Test_parse_timedelta_string(AmbitionTestCase):
+class Test_parse_timedelta_string(unittest.TestCase):
     """Test some round trips between timedelta, string, timedelta.
     """
     def test_works(self):

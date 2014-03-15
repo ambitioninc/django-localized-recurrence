@@ -1,12 +1,12 @@
+import unittest
 from datetime import datetime, timedelta
 
 import pytz
 
-from ambition.utils.test import AmbitionTestCase
 from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet, replace_with_offset
 
 
-class Test_LocalizedRecurrenceQuerySet(AmbitionTestCase):
+class Test_LocalizedRecurrenceQuerySet(unittest.TestCase):
     """Simple test to ensure the custom query set is being used.
     """
     def setUp(self):
@@ -21,7 +21,7 @@ class Test_LocalizedRecurrenceQuerySet(AmbitionTestCase):
         self.assertIsInstance(recurrences, LocalizedRecurrenceQuerySet)
 
 
-class Test_LocalizedRecurrenceQuerySet_update_schedule(AmbitionTestCase):
+class Test_LocalizedRecurrenceQuerySet_update_schedule(unittest.TestCase):
     """Test that updates to recurrences are reflected in the DB.
     """
     def setUp(self):
@@ -52,7 +52,7 @@ class Test_LocalizedRecurrenceQuerySet_update_schedule(AmbitionTestCase):
         self.assertTrue(all(r.next_scheduled > time for r in LocalizedRecurrence.objects.all()))
 
 
-class Test_LocalizedRecurrence(AmbitionTestCase):
+class Test_LocalizedRecurrence(unittest.TestCase):
     """Test the creation and querying of LocalizedRecurrence records.
     """
     def setUp(self):
@@ -77,7 +77,7 @@ class Test_LocalizedRecurrence(AmbitionTestCase):
         self.assertTrue(isinstance(lr.offset, timedelta))
 
 
-class Test_LocalizedRecurrence_utc_of_next_schedule(AmbitionTestCase):
+class Test_LocalizedRecurrence_utc_of_next_schedule(unittest.TestCase):
     def setUp(self):
         self.lr_day = LocalizedRecurrence.objects.create(
             interval='DAY',
@@ -206,7 +206,7 @@ class Test_LocalizedRecurrence_utc_of_next_schedule(AmbitionTestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
 
-class Test_replace_with_offset(AmbitionTestCase):
+class Test_replace_with_offset(unittest.TestCase):
     def test_day(self):
         """replace_with_offset works as expected with a 'DAY' interval.
         """
