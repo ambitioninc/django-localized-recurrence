@@ -13,5 +13,5 @@ before_script:
   - pep8 localized_recurrence --max-line-length=120 --exclude=migrations
   - pyflakes localized_recurrence
 script:
-  - coverage run --source='localized_recurrence' --branch django-admin.py test
+  - coverage run --source='localized_recurrence' --branch $(which django-admin.py) test
   - coverage report --fail-under=100
