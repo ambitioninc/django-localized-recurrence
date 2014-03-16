@@ -4,7 +4,7 @@ python:
 env:
   global:
     - DJANGO_SETTINGS_MODULE='localized_recurrence.tests.settings'
-  matrix
+  matrix:
     - DJANGO=1.6.2
 install:
   - pip install -q coverage pep8 pyflakes Django==$DJANGO --use-mirrors
