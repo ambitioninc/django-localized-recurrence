@@ -10,8 +10,8 @@ install:
   - pip install -q coverage pep8 pyflakes Django==$DJANGO --use-mirrors
   - pip install -q -e . --use-mirrors
 before_script:
-  - pep8 --exclude=migrations
-  - pyflakes
+  - pep8 localized_recurrence --exclude=migrations
+  - pyflakes localized_recurrence
 script:
   - coverage run --source='localized_recurrence' --branch django-admin.py test
   - coverage report --fail-under=100
