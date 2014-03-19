@@ -7,11 +7,11 @@ env:
   matrix:
     - DJANGO=1.6.2
 install:
-  - pip install -q coverage pep8 pyflakes Django==$DJANGO --use-mirrors
-  - pip install -q -e . --use-mirrors
+  - pip install -q coverage pep8 pyflakes Django==$DJANGO
+  - pip install -q -e .
 before_script:
-  - pep8 --exclude=migrations
-  - pyflakes
+  - pep8 localized_recurrence --max-line-length=120 --exclude=migrations
+  - pyflakes localized_recurrence
 script:
-  - coverage run --source='localized_recurrence' --branch django-admin.py test
+  - coverage run --source='localized_recurrence' --branch $(which django-admin.py) test
   - coverage report --fail-under=100
