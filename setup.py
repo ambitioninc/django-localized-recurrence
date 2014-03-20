@@ -34,5 +34,10 @@ setup(
         'fleming',
         'python-dateutil',
         'pytz',
-    ]
+    ],
+    tests_require=[
+        'django-nose',
+        'south'
+    ],
+    test_suite='run_tests.run_tests'
 )
