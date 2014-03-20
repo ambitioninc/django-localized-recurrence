@@ -3,7 +3,7 @@ python:
   - "2.7"
 env:
   global:
-    - DJANGO_SETTINGS_MODULE='localized_recurrence.tests.settings'
+    - DB=postgres
   matrix:
     - DJANGO=1.6.2
 install:
