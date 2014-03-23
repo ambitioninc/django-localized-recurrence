@@ -59,6 +59,39 @@ of how these recurrences are to be checked. For example, they could be
 checked in the view code when a user loads a page, or in a celery beat
 task.
 
+In order to support a broad range of use cases, localized-recurrence
+limits itself to two actions.
+
+1. Checking when the event is next scheduled to recur.
+2. Updating the event to have occured in this interval.
+
+With this model, the first step is to check if a `LocalizedRecurrence`
+is due to occur. For a given `LocalizedRecurrence` object, called, say
+`my_daily_event`, this check is as simple as:
+
+    my_daily_event.next_scheduled < datetime.utcnow()
+
+Or, to find all the `LocalizedRecurrence` instance which are due:
+
+    past_due = LocalizedRecurrence.objects.filter(next_scheduled__lte=datetime.utcnow())
+
+Then, after taking whatever action goes along with an event, we need
+to update the database so that the types of checks we showed above
+will only return `True` in the next interval for the recurrence.
+
+For a queryset, such as `past_due` above, this is as simple as:
+
+    past_due.update_schedule()
+
+With that call, django-localized-recurrence takes care of any local
+time changes in the interval, and sets the `next_scheduled` field of
+each object to the time, in UTC, of the event, as the user would
+expect it for their local time.
+
+To update a single record, first filter to that get record:
+
+     LocalizedRecurrence.objects.filter(id=my_daily_event.id).update_schedule()
+
 
 Contributions and Licence
 ----------------------------------------
