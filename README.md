@@ -16,7 +16,11 @@ time. With localized recurrences, it is easy.
 Installation
 ----------------------------------------
 
-    pip install django-localized-recurrence
+This packages is currently only available through github. The
+intention is to make it available on Pypi, but until then it can be
+installed through pip with:
+
+    pip install git+git://github.com/ambitioninc/django-localized-recurrence.git@master
 
 
 Usage
