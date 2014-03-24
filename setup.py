@@ -1,19 +1,29 @@
-import os
+import multiprocessing
+assert multiprocessing
+import re
 from setuptools import setup, find_packages
 
-README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 
-# allow setup.py to be run from any path
-os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
+def get_version():
+    """
+    Extracts the version number from the version.py file.
+    """
+    VERSION_FILE = 'localized_recurrence/version.py'
+    mo = re.search(r'^__version__ = [\'"]([^\'"]*)[\'"]', open(VERSION_FILE, 'rt').read(), re.M)
+    if mo:
+        return mo.group(1)
+    else:
+        raise RuntimeError('Unable to find version string in {0}.'.format(VERSION_FILE))
+
 
 setup(
     name='django-localized-recurrence',
-    version='0.1dev',
+    version=get_version(),
     packages=find_packages(),
     include_package_data=True,
     license='MIT License',
-    description="Store events that recur in users' local times.",
-    long_description=README,
+    description='Store events that recur in users\' local times.',
+    long_description=open('README.md').read(),
     author='Erik Swanson',
     author_email='theerikswanson@gmail.com',
     classifiers=[
@@ -35,6 +45,7 @@ setup(
         'pytz',
     ],
     tests_require=[
+        'psycopg2',
         'django-nose',
         'south'
     ],
