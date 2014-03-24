@@ -14,4 +14,4 @@ before_script:
   - psql -c 'CREATE DATABASE localized_recurrence;' -U postgres
 script:
   - coverage run --source='localized_recurrence' --branch setup.py test
-  - coverage report --fail-under=100
+  - coverage report --fail-under=100 --show-missing
