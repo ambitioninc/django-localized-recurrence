@@ -11,6 +11,7 @@ install:
 before_script:
   - pep8 localized_recurrence --max-line-length=120 --exclude=migrations
   - pyflakes localized_recurrence
+  - psql -c 'CREATE DATABASE localized_recurrence;' -U postgres
 script:
   - coverage run --source='localized_recurrence' --branch setup.py test
   - coverage report --fail-under=100
