@@ -4,7 +4,6 @@ Provides the ability to run test on a standalone Django app.
 import os
 import sys
 from django.conf import settings
-from django_nose import NoseTestSuiteRunner
 from optparse import OptionParser
 
 
@@ -44,6 +43,10 @@ if not settings.configured:
         ROOT_URLCONF='localized_recurrence.urls',
         DEBUG=False,
     )
+
+# Django nose must be imported here because it depends on the settings being configured first
+from django_nose import NoseTestSuiteRunner
+
 
 def run_tests(*test_args, **kwargs):
     if 'south' in settings.INSTALLED_APPS:

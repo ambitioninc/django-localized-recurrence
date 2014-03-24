@@ -8,10 +8,10 @@ env:
     - DJANGO=1.6.2
 install:
   - pip install -q coverage pep8 pyflakes Django==$DJANGO
-  - pip install -q -e .
 before_script:
-  - pep8 localized_recurrence --max-line-length=120 --exclude=migrations
-  - pyflakes localized_recurrence
+  - pep8 . --max-line-length=120 --exclude=migrations
+  - find . -name '*.py' -not -regex '.*/migrations/.*' -not -regex '.*/__init__.py' -exec pyflakes '{}' \;
+  - psql -c 'CREATE DATABASE localized_recurrence;' -U postgres
 script:
   - coverage run --source='localized_recurrence' --branch setup.py test
-  - coverage report --fail-under=100
+  - coverage report --fail-under=100 --show-missing
