@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from mock import MagicMock
 
-from ..fields import DurationField, parse_timedelta_string
+from ..fields import DurationField, parse_timedelta_string, setup_south
 
 
 class Test_DurationField_to_python(unittest.TestCase):
@@ -151,3 +151,15 @@ class Test_parse_timedelta_string(unittest.TestCase):
         self.assertEqual(td4_in, td4_out)
         self.assertEqual(td5_in, td5_out)
         self.assertEqual(td6_in, td6_out)
+
+class Test_setup_south(unittest.TestCase):
+    def test_no_south(self):
+        """This test is meant to hit the branch handleing the ImportError for
+        south.
+
+        Some users may not have south, so if it is not available, we
+        just pass.
+        """
+        with mock.patch.dict('sys.modules', {'south': {}}):
+            setup_south()
+        self.assertTrue(True)
