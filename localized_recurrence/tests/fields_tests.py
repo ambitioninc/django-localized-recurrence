@@ -152,6 +152,7 @@ class Test_parse_timedelta_string(unittest.TestCase):
         self.assertEqual(td5_in, td5_out)
         self.assertEqual(td6_in, td6_out)
 
+
 class Test_setup_south(unittest.TestCase):
     def test_no_south(self):
         """This test is meant to hit the branch handleing the ImportError for

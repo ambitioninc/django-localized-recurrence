@@ -75,6 +75,7 @@ def parse_timedelta_string(string):
     else:
         raise ValueError("'%s' is not in the form [D day[s],][H]H:MM:SS[.UUUUUU]" % string)
 
+
 def setup_south():
     try:
         from south.modelsinspector import add_introspection_rules
