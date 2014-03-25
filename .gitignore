@@ -7,6 +7,7 @@
 
 # Coverage files
 .coverage
+htmlcov/
 
 # Setuptools distribution folder.
 /dist/
@@ -17,3 +18,6 @@
 
 # Virtualenv
 env/
+
+# OSX
+.DS_Store
