@@ -1,7 +1,7 @@
 import unittest
 from datetime import timedelta
 
-from mock import MagicMock
+from mock import MagicMock, patch
 
 from ..fields import DurationField, parse_timedelta_string, setup_south
 
@@ -161,6 +161,6 @@ class Test_setup_south(unittest.TestCase):
         Some users may not have south, so if it is not available, we
         just pass.
         """
-        with mock.patch.dict('sys.modules', {'south': {}}):
+        with patch.dict('sys.modules', {'south': {}}):
             setup_south()
         self.assertTrue(True)
