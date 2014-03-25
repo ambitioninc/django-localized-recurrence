@@ -45,8 +45,8 @@ setup(
         'pytz',
     ],
     tests_require=[
-        'psycopg2',
         'django-nose',
+        'mock',
         'south'
     ],
     test_suite='run_tests.run_tests'

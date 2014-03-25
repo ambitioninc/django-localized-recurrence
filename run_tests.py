@@ -9,14 +9,10 @@ from optparse import OptionParser
 
 if not settings.configured:
     # Determine the database settings depending on if a test_db var is set in CI mode or not
-    test_db = os.environ.get('DB', None)
-    if test_db is None:
+    test_db = os.environ.get('DB', 'sqlite')
+    if test_db == 'sqlite':
         db_config = {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': 'ambition_dev',
-            'USER': 'ambition_dev',
-            'PASSWORD': 'ambition_dev',
-            'HOST': 'localhost'
+            'ENGINE': 'django.db.backends.sqlite3'
         }
     elif test_db == 'postgres':
         db_config = {
