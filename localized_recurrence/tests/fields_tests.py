@@ -1,16 +1,16 @@
 import unittest
 from datetime import timedelta
 
-from mock import MagicMock
+from mock import MagicMock, patch
 
-from ..fields import DurationField, parse_timedelta_string
+from .. import fields
 
 
 class Test_DurationField_to_python(unittest.TestCase):
     def setUp(self):
         """Create a mock of the DurationField class and pin to_python to it.
         """
-        self.df = DurationField()
+        self.df = fields.DurationField()
 
     def test_timedelta(self):
         """A timedelta should just get returned.
@@ -52,7 +52,7 @@ class Test_DurationField_to_python(unittest.TestCase):
     def test_invalid(self):
         """Unsupported objects raise ValueError
         """
-        td_in = lambda x: x*x
+        td_in = self
         with self.assertRaises(ValueError):
             self.df.to_python(td_in)
 
@@ -61,7 +61,7 @@ class Test_DurationField_get_prep_value(unittest.TestCase):
     def setUp(self):
         """Create a mock of the DurationField class and pin get_prep_value.
         """
-        self.df = DurationField()
+        self.df = fields.DurationField()
 
     def test_returns_int(self):
         """Type should be `int`.
@@ -95,8 +95,8 @@ class Test_DurationField_value_to_string(unittest.TestCase):
         of the expected object.
         """
         self.mock_DurationField = MagicMock()
-        self.mock_DurationField.value_to_string = DurationField.__dict__['value_to_string']
-        self.mock_DurationField.to_python = DurationField.__dict__['to_python']
+        self.mock_DurationField.value_to_string = fields.DurationField.__dict__['value_to_string']
+        self.mock_DurationField.to_python = fields.DurationField.__dict__['to_python']
         self.mock_DurationField._get_val_from_obj.side_effect = lambda x: x
 
     def test_simple_string(self):
@@ -139,15 +139,27 @@ class Test_parse_timedelta_string(unittest.TestCase):
         str4_out = str(td4_in)
         str5_out = str(td5_in)
         str6_out = str(td6_in)
-        td1_out = parse_timedelta_string(str1_out)
-        td2_out = parse_timedelta_string(str2_out)
-        td3_out = parse_timedelta_string(str3_out)
-        td4_out = parse_timedelta_string(str4_out)
-        td5_out = parse_timedelta_string(str5_out)
-        td6_out = parse_timedelta_string(str6_out)
+        td1_out = fields.parse_timedelta_string(str1_out)
+        td2_out = fields.parse_timedelta_string(str2_out)
+        td3_out = fields.parse_timedelta_string(str3_out)
+        td4_out = fields.parse_timedelta_string(str4_out)
+        td5_out = fields.parse_timedelta_string(str5_out)
+        td6_out = fields.parse_timedelta_string(str6_out)
         self.assertEqual(td1_in, td1_out)
         self.assertEqual(td2_in, td2_out)
         self.assertEqual(td3_in, td3_out)
         self.assertEqual(td4_in, td4_out)
         self.assertEqual(td5_in, td5_out)
         self.assertEqual(td6_in, td6_out)
+
+
+class Test_setup_south(unittest.TestCase):
+    def test_no_south(self):
+        """This test is meant to hit the branch handleing the ImportError for
+        south.
+
+        Some users may not have south, so if it is not available, we
+        just pass.
+        """
+        with patch.dict('sys.modules', {'south.modelsinspector': {}}):
+            reload(fields)
