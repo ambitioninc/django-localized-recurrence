@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Wilduck/django-localized-recurrence.png?branch=run-tests)](https://travis-ci.org/Wilduck/django-localized-recurrence)
+[![Build Status](https://travis-ci.org/ambitioninc/django-localized-recurrence.svg?branch=develop)](https://travis-ci.org/ambitioninc/django-localized-recurrence)
 
 Django Localized Recurrence
 ===========================
