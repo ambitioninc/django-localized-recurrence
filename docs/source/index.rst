@@ -11,10 +11,10 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   Installation
-   Quickstart
-   License
-   Contributing
+   installation
+   quickstart
+   license
+   contributing
 
 
 Indices and tables
