@@ -9,6 +9,9 @@
 .coverage
 htmlcov/
 
+# Sphinx / Read The Docs build files
+docs/build/
+
 # Setuptools distribution folder.
 /dist/
 
