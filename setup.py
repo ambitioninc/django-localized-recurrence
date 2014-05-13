@@ -23,7 +23,7 @@ setup(
     include_package_data=True,
     license='MIT License',
     description='Store events that recur in users\' local times.',
-    long_description=open('README.md').read(),
+    long_description=open('README').read(),
     author='Erik Swanson',
     author_email='theerikswanson@gmail.com',
     classifiers=[
