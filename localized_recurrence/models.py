@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 
 from dateutil.relativedelta import relativedelta
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from timezone_field import TimeZoneField
@@ -19,14 +19,43 @@ INTERVAL_CHOICES = (
 
 
 class LocalizedRecurrenceQuerySet(models.query.QuerySet):
-    def update_schedule(self, time=None):
+    def update_schedule(self, time=None, for_object=None):
         """Update the schedule times for all the recurrences in the queryset.
+
+        Args:
+          time - The time the schedule was checked. If None, defaults
+          to utcnow.
+
+          for_object - Any instance of a django model. Allows a single
+          recurrence to be updated for multiple
+          users/entities/objects/etc.
+
+        Side Effects:
+          If `for_object` is None, updates the `next_scheduled` and
+          `previous_scheduled` fields for every recurrence in the
+          queryset.
+
+          If `for_object` is not None, creates or updates the
+          `next_scheduled` and `previous_scheduled` fields on a
+          `RecurrenceForObject` instance associated with each
+          recurrence in the queryset.
+
         """
         time = time or datetime.utcnow()
-        for recurrence in self:
-            recurrence.next_scheduled = recurrence.utc_of_next_schedule(time)
-            recurrence.previous_scheduled = time
-            recurrence.save()
+        if for_object is None:
+            for recurrence in self:
+                recurrence.next_scheduled = recurrence.utc_of_next_schedule(time)
+                recurrence.previous_scheduled = time
+                recurrence.save()
+        else:
+            for recurrence in self:
+                obj, created = RecurrenceForObject.objects.get_or_create(
+                    recurrence=recurrence,
+                    content_object=for_object
+                )
+                obj.next_scheduled = recurrence.utc_of_next_schedule(time)
+                obj.previous_scheduled = time
+                obj.save()
 
 
 class LocalizedRecurrenceManager(models.Manager):
@@ -74,7 +103,7 @@ class RecurrenceForObject(models.Model):
     recurrence = models.ForeignKey('LocalizedRecurrence')
     content_type = models.ForeignKey(ContentType)
     object_id = models.PositiveIntegerField()
-    content_object = GenericForeignKey('content_type', 'object_id')
+    content_object = generic.GenericForeignKey('content_type', 'object_id')
     previous_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
     next_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
 
