@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 
 from dateutil.relativedelta import relativedelta
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from timezone_field import TimeZoneField
 import fleming
@@ -64,6 +66,17 @@ class LocalizedRecurrence(models.Model):
             utc_scheduled_time = fleming.add_timedelta(
                 utc_scheduled_time, additional_time[self.interval], within_tz=self.timezone)
         return utc_scheduled_time
+
+
+class RecurrenceForObject(models.Model):
+    """Updates to a recurrence for different objects.
+    """
+    recurrence = models.ForeignKey('LocalizedRecurrence')
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey('content_type', 'object_id')
+    previous_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
+    next_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
 
 
 def replace_with_offset(dt, offset, interval):
