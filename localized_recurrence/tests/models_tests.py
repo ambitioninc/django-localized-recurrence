@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 from django.contrib.contenttypes.models import ContentType
 import pytz
 
-from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet, RecurrenceForObject, replace_with_offset
+from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet, RecurrenceForObject
+from ..models import replace_with_offset, _update_schedule
 
 
 class Test_LocalizedRecurrenceQuerySet(unittest.TestCase):
@@ -234,6 +235,39 @@ class Test_LocalizedRecurrence_utc_of_next_schedule(unittest.TestCase):
         expected_next_schedule = datetime(2013, 5, 6, 10)
         schedule_out = self.lr_day.utc_of_next_schedule(current_time)
         self.assertEqual(schedule_out, expected_next_schedule)
+
+
+class Test_update_schedule(unittest.TestCase):
+    def setUp(self):
+        self.lr_week = LocalizedRecurrence.objects.create(
+            interval='WEEK',
+            offset=timedelta(hours=12),
+            timezone=pytz.timezone('US/Eastern'),
+        )
+        self.lr_week = LocalizedRecurrence.objects.create(
+            interval='DAY',
+            offset=timedelta(hours=12),
+            timezone=pytz.timezone('US/Eastern'),
+        )
+
+    def test_updates_localized_recurrences(self):
+        time = datetime(year=2013, month=5, day=20, hour=12, minute=3)
+        _update_schedule([self.lr_week], time)
+        self.assertGreater(self.lr_week.next_scheduled, time)
+        self.assertEqual(self.lr_week.previous_scheduled, time)
+
+    def test_updates_recurrence_for_objects(self):
+        time = datetime(year=2013, month=5, day=20, hour=12, minute=3)
+        _update_schedule([self.lr_week], time, for_object=self.lr_week)
+        obj_recurrence = self.lr_week.recurrenceforobject_set.get(
+            object_id=self.lr_week.id,
+            content_type=ContentType.objects.get_for_model(self.lr_week)
+        )
+        self.assertGreater(obj_recurrence.next_scheduled, time)
+        self.assertEqual(obj_recurrence.previous_scheduled, time)
+
+    def test_works_with_queryset(self):
+        pass
 
 
 class Test_replace_with_offset(unittest.TestCase):

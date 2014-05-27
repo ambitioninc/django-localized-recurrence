@@ -20,44 +20,7 @@ INTERVAL_CHOICES = (
 
 class LocalizedRecurrenceQuerySet(models.query.QuerySet):
     def update_schedule(self, time=None, for_object=None):
-        """Update the schedule times for all the recurrences in the queryset.
-
-        Args:
-          time - The time the schedule was checked. If None, defaults
-          to utcnow.
-
-          for_object - Any instance of a django model. Allows a single
-          recurrence to be updated for multiple
-          users/entities/objects/etc.
-
-        Side Effects:
-          If `for_object` is None, updates the `next_scheduled` and
-          `previous_scheduled` fields for every recurrence in the
-          queryset.
-
-          If `for_object` is not None, creates or updates the
-          `next_scheduled` and `previous_scheduled` fields on a
-          `RecurrenceForObject` instance associated with each
-          recurrence in the queryset.
-
-        """
-        time = time or datetime.utcnow()
-        if for_object is None:
-            for recurrence in self:
-                recurrence.next_scheduled = recurrence.utc_of_next_schedule(time)
-                recurrence.previous_scheduled = time
-                recurrence.save()
-        else:
-            for recurrence in self:
-                ct = ContentType.objects.get_for_model(for_object)
-                obj, created = RecurrenceForObject.objects.get_or_create(
-                    recurrence=recurrence,
-                    content_type=ct,
-                    object_id=for_object.id
-                )
-                obj.next_scheduled = recurrence.utc_of_next_schedule(time)
-                obj.previous_scheduled = time
-                obj.save()
+        _update_schedule(self, time=time, for_object=for_object)
 
 
 class LocalizedRecurrenceManager(models.Manager):
@@ -108,6 +71,50 @@ class RecurrenceForObject(models.Model):
     content_object = generic.GenericForeignKey('content_type', 'object_id')
     previous_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
     next_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
+
+
+def _update_schedule(recurrences, time=None, for_object=None):
+        """Update the schedule times for all the provided recurrences.
+
+        Args:
+          recurrences - an iterable of LocalizedRecurrence objects to
+          update (either directly, or their component objects)
+
+          time - The time the schedule was checked. If None, defaults
+          to utcnow.
+
+          for_object - Any instance of a django model. Allows a single
+          recurrence to be updated for multiple
+          users/entities/objects/etc.
+
+        Side Effects:
+          If `for_object` is None, updates the `next_scheduled` and
+          `previous_scheduled` fields for every recurrence in the
+          iterable.
+
+          If `for_object` is not None, creates or updates the
+          `next_scheduled` and `previous_scheduled` fields on a
+          `RecurrenceForObject` instance associated with each
+          recurrence in the iterable.
+
+        """
+        time = time or datetime.utcnow()
+        if for_object is None:
+            for recurrence in recurrences:
+                recurrence.next_scheduled = recurrence.utc_of_next_schedule(time)
+                recurrence.previous_scheduled = time
+                recurrence.save()
+        else:
+            for recurrence in recurrences:
+                ct = ContentType.objects.get_for_model(for_object)
+                obj, created = RecurrenceForObject.objects.get_or_create(
+                    recurrence=recurrence,
+                    content_type=ct,
+                    object_id=for_object.id
+                )
+                obj.next_scheduled = recurrence.utc_of_next_schedule(time)
+                obj.previous_scheduled = time
+                obj.save()
 
 
 def replace_with_offset(dt, offset, interval):
