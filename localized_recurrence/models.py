@@ -47,6 +47,15 @@ class LocalizedRecurrence(models.Model):
 
     objects = LocalizedRecurrenceManager()
 
+    def sub_recurrence(self, for_object):
+        ct = ContentType.object.get_for_model(for_object):
+        obj, created = self.recurrenceforobject_set.get_or_create(
+            recurrence=recurrence,
+            content_type=ct,
+            object_id=for_object.id
+        )
+        return obj
+
     def update_schedule(self, time=None, for_object=None):
         _update_schedule([self], time, for_object)
 
