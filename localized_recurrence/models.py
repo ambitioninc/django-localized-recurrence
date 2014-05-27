@@ -49,9 +49,11 @@ class LocalizedRecurrenceQuerySet(models.query.QuerySet):
                 recurrence.save()
         else:
             for recurrence in self:
+                ct = ContentType.objects.get_for_model(for_object)
                 obj, created = RecurrenceForObject.objects.get_or_create(
                     recurrence=recurrence,
-                    content_object=for_object
+                    content_type=ct,
+                    object_id=for_object.id
                 )
                 obj.next_scheduled = recurrence.utc_of_next_schedule(time)
                 obj.previous_scheduled = time
@@ -66,7 +68,7 @@ class LocalizedRecurrenceManager(models.Manager):
         """
         Written to allow both:
             - LocalizedRecurrence.objects.update_schedule()
-            - LocalizedRecurrence.get(id=my_recurrence).update_schedule()
+            - LocalizedRecurrence.filter(id=my_recurrence.id).update_schedule()
         """
         return getattr(self.get_queryset(), name)
 
