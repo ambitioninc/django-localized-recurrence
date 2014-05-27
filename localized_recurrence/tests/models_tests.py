@@ -1,14 +1,14 @@
-import unittest
 from datetime import datetime, timedelta
 
 from django.contrib.contenttypes.models import ContentType
+from django.test import TestCase
 import pytz
 
 from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet, RecurrenceForObject
 from ..models import replace_with_offset, _update_schedule
 
 
-class Test_LocalizedRecurrenceQuerySet(unittest.TestCase):
+class Test_LocalizedRecurrenceQuerySet(TestCase):
     """Simple test to ensure the custom query set is being used.
     """
     def setUp(self):
@@ -23,7 +23,7 @@ class Test_LocalizedRecurrenceQuerySet(unittest.TestCase):
         self.assertIsInstance(recurrences, LocalizedRecurrenceQuerySet)
 
 
-class Test_LocalizedRecurrenceQuerySet_update_schedule(unittest.TestCase):
+class Test_LocalizedRecurrenceQuerySet_update_schedule(TestCase):
     """Test that updates to recurrences are reflected in the DB.
     """
     def setUp(self):
@@ -83,7 +83,7 @@ class Test_LocalizedRecurrenceQuerySet_update_schedule(unittest.TestCase):
         self.assertEqual(individual_recurrence.previous_scheduled, time)
 
 
-class Test_LocalizedRecurrence(unittest.TestCase):
+class Test_LocalizedRecurrence(TestCase):
     """Test the creation and querying of LocalizedRecurrence records.
     """
     def setUp(self):
@@ -107,8 +107,28 @@ class Test_LocalizedRecurrence(unittest.TestCase):
         lr = LocalizedRecurrence.objects.first()
         self.assertTrue(isinstance(lr.offset, timedelta))
 
+class Test_LocalizedRecurrence_sub_recurrence(TestCase):
+    def setUp(self):
+        self.lr = LocalizedRecurrence.objects.create(
+            interval='DAY',
+            offset=timedelta(hours=12),
+            timezone=pytz.timezone('US/Eastern'),
+        )
 
-class Test_LocalizedRecurrence_update_schedule(unittest.TestCase):
+    def test_creates(self):
+        self.lr.sub_recurrence(for_object=self.lr)
+        self.assertEqual(RecurrenceForObject.objects.count(), 1)
+
+    def test_gets(self):
+        self.lr.sub_recurrence(for_object=self.lr)
+        obj = self.lr.sub_recurrence(for_object=self.lr)
+        from pprint import pprint
+        pprint([r.__dict__ for r in RecurrenceForObject.objects.all()])
+        self.assertEqual(RecurrenceForObject.objects.count(), 1)
+        self.assertEqual(obj.content_object, self.lr)
+
+
+class Test_LocalizedRecurrence_update_schedule(TestCase):
     def setUp(self):
         self.lr_day = LocalizedRecurrence.objects.create(
             interval='DAY',
@@ -130,7 +150,7 @@ class Test_LocalizedRecurrence_update_schedule(unittest.TestCase):
         self.assertGreater(individual_recurrence.next_scheduled, time)
 
 
-class Test_LocalizedRecurrence_utc_of_next_schedule(unittest.TestCase):
+class Test_LocalizedRecurrence_utc_of_next_schedule(TestCase):
     def setUp(self):
         self.lr_day = LocalizedRecurrence.objects.create(
             interval='DAY',
@@ -259,7 +279,7 @@ class Test_LocalizedRecurrence_utc_of_next_schedule(unittest.TestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
 
-class Test_update_schedule(unittest.TestCase):
+class Test_update_schedule(TestCase):
     def setUp(self):
         self.lr_week = LocalizedRecurrence.objects.create(
             interval='WEEK',
@@ -288,11 +308,8 @@ class Test_update_schedule(unittest.TestCase):
         self.assertGreater(obj_recurrence.next_scheduled, time)
         self.assertEqual(obj_recurrence.previous_scheduled, time)
 
-    def test_works_with_queryset(self):
-        pass
 
-
-class Test_replace_with_offset(unittest.TestCase):
+class Test_replace_with_offset(TestCase):
     def test_day(self):
         """replace_with_offset works as expected with a 'DAY' interval.
         """

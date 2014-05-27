@@ -48,9 +48,9 @@ class LocalizedRecurrence(models.Model):
     objects = LocalizedRecurrenceManager()
 
     def sub_recurrence(self, for_object):
-        ct = ContentType.object.get_for_model(for_object):
-        obj, created = self.recurrenceforobject_set.get_or_create(
-            recurrence=recurrence,
+        ct = ContentType.objects.get_for_model(for_object)
+        obj, created = RecurrenceForObject.objects.get_or_create(
+            recurrence=self,
             content_type=ct,
             object_id=for_object.id
         )
