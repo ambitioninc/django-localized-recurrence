@@ -108,6 +108,28 @@ class Test_LocalizedRecurrence(unittest.TestCase):
         self.assertTrue(isinstance(lr.offset, timedelta))
 
 
+class Test_LocalizedRecurrence_update_schedule(unittest.TestCase):
+    def setUp(self):
+        self.lr_day = LocalizedRecurrence.objects.create(
+            interval='DAY',
+            offset=timedelta(hours=12),
+            timezone=pytz.timezone('US/Eastern'),
+        )
+
+    def test_update_passes_through(self):
+        time = datetime(year=2013, month=5, day=20, hour=15, minute=3)
+        self.lr_day.update_schedule(time)
+        self.assertGreater(self.lr_day.next_scheduled, time)
+
+    def test_update_passes_through_for_obj(self):
+        time = datetime(year=2013, month=5, day=20, hour=15, minute=3)
+        self.lr_day.update_schedule(time, self.lr_day)
+        ct = ContentType.objects.get_for_model(self.lr_day)
+        individual_recurrence = self.lr_day.recurrenceforobject_set.get(
+            object_id=self.lr_day.id, content_type=ct)
+        self.assertGreater(individual_recurrence.next_scheduled, time)
+
+
 class Test_LocalizedRecurrence_utc_of_next_schedule(unittest.TestCase):
     def setUp(self):
         self.lr_day = LocalizedRecurrence.objects.create(

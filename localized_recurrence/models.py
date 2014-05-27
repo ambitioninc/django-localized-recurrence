@@ -47,6 +47,9 @@ class LocalizedRecurrence(models.Model):
 
     objects = LocalizedRecurrenceManager()
 
+    def update_schedule(self, time=None, for_object=None):
+        _update_schedule([self], time, for_object)
+
     def utc_of_next_schedule(self, current_time):
         local_time = fleming.convert_to_tz(current_time, self.timezone)
         local_scheduled_time = replace_with_offset(local_time, self.offset, self.interval)
