@@ -107,6 +107,7 @@ class Test_LocalizedRecurrence(TestCase):
         lr = LocalizedRecurrence.objects.first()
         self.assertTrue(isinstance(lr.offset, timedelta))
 
+
 class Test_LocalizedRecurrence_sub_recurrence(TestCase):
     def setUp(self):
         self.lr = LocalizedRecurrence.objects.create(
