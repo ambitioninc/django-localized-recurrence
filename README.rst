@@ -26,13 +26,20 @@ localized-recurrences in more detail.
 Installation
 ----------------------------------------
 
-This packages is currently only available through github. The
-intention is to make it available on Pypi, but until then it can be
-installed through pip with:
+This packages is currently available through Pypi and github. To
+install from Pypi using ``pip`` (recommended):
 
 .. code-block:: none
 
-    pip install git+git://github.com/ambitioninc/django-localized-recurrence.git@master
+    pip install django-localized-recurrence
+
+To install the development version from github:
+
+.. code-block:: none
+
+    git clone git+git://github.com/ambitioninc/django-localized-recurrence.git@develop
+    cd django-localized-recurrence
+    python setup.py install
 
 
 Basic Usage: Scheduling
@@ -232,15 +239,31 @@ code path. It would also be possible to check if the recurrences are
 past due in a separate task, like the celery-beat scheduler.
 
 
-Advanced Usage:
+Advanced Usage: Event Tracking
 ----------------------------------------
 
 The dual to the scheduling problem, and another possible use for
-localized recurrence is keeping track of whether or not events have
-actually occured in a given time period. For example, a notifications
+localized recurrence, is keeping track of whether or not events have
+actually occured in a given time period, as opposed to keeping track
+of when an event is scheduled to occur. For example, a notifications
 app could use localized recurrences to keep track of notifications
 that should only be sent once every day.
 
+Any localized recurrence to be used for this purpose should be
+initiated with an ``offset`` of ``timedelta(0)``. For example:
+
+.. code-block:: python
+
+    from localized_recurrence.models import LocalizedRecurrence
+
+    event_tracker = LocalizedRecurrence.objects.create(
+        interval='DAY',
+        offset=timedelta(0),
+        timezone='US/Eastern'
+    )
+
+We'll show below how a recurrence of the form above could be used to
+track the state of an event throughout a given time period.
 
 Step Tracker Example
 ````````````````````````````````````````
@@ -306,9 +329,19 @@ passed (that is, it is less than ``utcnow()``).
 Note that the recurrence is only updated if the step notification
 condition is me.t This means that the recurrence ``next_scheduled``
 value will always be less than ``utcnow()``, except in the case where
-an email has already been sent that day. This is how localized
-recurrences can be used to keep track of the state of a notification,
-rather than keep track of the state of a schedule.
+an email has already been sent that day.
+
+Also, because the recurrences being used in this example have all been
+initialized with ``offset=timedelta(0)``, when the call to
+``update_schedule`` does occur, it updates to the start of the next
+day in the user's local time, making sure that no duplicate emails are
+sent in one day, but also making sure that a new email can be sent
+for each day's goal.
+
+This is how localized recurrences can be used to keep track of the
+state of a notification, rather than keep track of the state of a
+schedule.
+
 
 
 Tracking Multiple Things with one Recurrence
