@@ -372,6 +372,18 @@ exist. This allows a variable number of objects to be tracked, while
 the consumer of the localized recurrence library only needs to track
 one reference to a localized recurrence.
 
+Finally, given a list of objects, it is possible to check all at once,
+how many of them are due by using:
+
+.. code-block:: python
+
+    objs_due = my_recurrence.check_due(potentially_eventful)
+
+The command above will filter out any objects from
+``potentially_eventful`` that have already been acted upon in this
+period, leaving only those objects who's ``next_scheduled`` value is
+less than the current time. This method also works to minimized the
+number of database queries needed to accomplish this task.
 
 Contributions and Licence
 ----------------------------------------
