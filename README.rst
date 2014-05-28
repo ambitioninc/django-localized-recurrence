@@ -35,7 +35,7 @@ installed through pip with:
     pip install git+git://github.com/ambitioninc/django-localized-recurrence.git@master
 
 
-Usage
+Basic Usage: Scheduling
 ----------------------------------------
 
 
@@ -230,6 +230,115 @@ In this usage of the LocalizedRecurrence objects, checking the
 recurrences depend on the user actually visiting a page to hit the
 code path. It would also be possible to check if the recurrences are
 past due in a separate task, like the celery-beat scheduler.
+
+
+Advanced Usage:
+----------------------------------------
+
+The dual to the scheduling problem, and another possible use for
+localized recurrence is keeping track of whether or not events have
+actually occured in a given time period. For example, a notifications
+app could use localized recurrences to keep track of notifications
+that should only be sent once every day.
+
+
+Step Tracker Example
+````````````````````````````````````````
+
+Imagine running a website that recieves updates from users pedometers
+about the number of steps they've taken. Modeling this requires a
+model that keeps track of steps taken each day. Assume the pedometer
+sends a request with the user's local date, and the number of steps
+since the last check in. The code to keep track of that information
+would look something like:
+
+.. code-block:: python
+
+    class StepsManager(models.Manager):
+        def add_steps(self, user, date, steps):
+            steps_obj, created = self.get_or_create(user=user, date=date)
+            steps_obj.steps = steps_obj.steps + steps
+            steps_obj.save()
+
+    class Steps(models.Model):
+        user = models.ForeignKey('User')
+        date = models.DateField()
+        total_steps = models.IntegerField(default=0)
+
+        objects = StepsManager()
+
+Users can also subscribe to get an email-notification whenever they
+hit over a given number of steps in a single day. This is where a
+localized recurrence can be used to help ensure that users are sent no
+more than one email notification in a given day.
+
+We can keep track of what notifications a user wishes to recieve in a
+``StepsNotification`` model:
+
+.. code-block:: python
+
+    class StepsNotification(models.Model):
+        user = models.ForeignKey('User', unique=True)
+        steps_to_notify = models.IntegerField(default=10000)
+        recurrence = models.ForeignKey('LocalizedRecurrence')
+
+Then, a periodic task can be set up to check if the user has reached
+their goal. This will also check that the associated recurrence is
+past due by checking that it's ``next_scheduled`` value has already
+passed (that is, it is less than ``utcnow()``).
+
+.. code-block:: python
+
+    def check_steps_and_notify(user):
+        utc_now = datetime.utcnow()
+        date = flemming.convert_to_tz(now, user.timezone)
+        steps = Steps.objects.filter(date=date)
+        notify = StepsNotification.objects.get(user=user)
+        if steps > notify.steps and notify.recurrence.next_scheduled < now:
+            msg = 'You reached your goal of {goal} steps today!'
+            send_email(
+                'You made your step goal',
+                msg.format(goal=notify.steps)
+                recipient_list=[user.email]
+            )
+            notify.recurrence.update_schedule()
+
+Note that the recurrence is only updated if the step notification
+condition is me.t This means that the recurrence ``next_scheduled``
+value will always be less than ``utcnow()``, except in the case where
+an email has already been sent that day. This is how localized
+recurrences can be used to keep track of the state of a notification,
+rather than keep track of the state of a schedule.
+
+
+Tracking Multiple Things with one Recurrence
+````````````````````````````````````````````
+
+Localized recurrences also come with the ability to track the state of
+multiple objects, with the same base localized recurrence. This
+feature is intended to make it simpler to track members of a mutable
+group (with members occasionally added and removed), that are in the
+same locale.
+
+Given a recurrence, additional objects can be tracked/updated with:
+
+.. code-block:: python
+
+    my_recurrence.update_schedule(for_object=my_thing_to_track)
+
+and their state can be checked with
+
+.. code-block:: python
+
+    my_recurrence.sub_recurrence(my_thing_to_track).next_scheduled
+
+A call to ``update_schedule`` with a ``for_object`` argument, or a
+call to ``sub_recurrence`` will try to find a the sub_recurrence
+tracking the provided object, and create it if it does not already
+exist. This allows a variable number of objects to be tracked, while
+the consumer of the localized recurrence library only needs to track
+one reference to a localized recurrence.
+
 
 Contributions and Licence
 ----------------------------------------
