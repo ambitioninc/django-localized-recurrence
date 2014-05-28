@@ -108,11 +108,98 @@ class Test_LocalizedRecurrence(TestCase):
         self.assertTrue(isinstance(lr.offset, timedelta))
 
 
+class Test_LocalizedRecurrence_check_due(TestCase):
+    def setUp(self):
+        self.lr = LocalizedRecurrence.objects.create(
+            interval='DAY',
+            offset=timedelta(0),
+            timezone=pytz.timezone('US/Eastern'),
+        )
+        self.lr2 = LocalizedRecurrence.objects.create(
+            interval='DAY',
+            offset=timedelta(0),
+            timezone=pytz.timezone('US/Central'),
+        )
+
+    def test_creates(self):
+        # We use self.lr as the object purely for convenience, not
+        # because it is a sensible choice.
+        due = self.lr.check_due([self.lr])
+        self.assertEqual(len(due), 1)
+        self.assertEqual(RecurrenceForObject.objects.count(), 1)
+
+    def test_returns_due(self):
+        # Again, use self.lr & self.lr2 as objects purely for
+        # convenience.
+        self.lr.sub_recurrence(self.lr)
+        self.lr.sub_recurrence(self.lr2)
+        self.lr.update_schedule(for_object=self.lr2)
+        due = self.lr.check_due([self.lr, self.lr2])
+        self.assertIn(self.lr, due)
+
+    def test_filters_not_due(self):
+        # Again, use self.lr & self.lr2 as objects purely for
+        # convenience.
+        self.lr.sub_recurrence(self.lr)
+        self.lr.sub_recurrence(self.lr2)
+        self.lr.update_schedule(for_object=self.lr2)
+        due = self.lr.check_due([self.lr, self.lr2])
+        self.assertNotIn(self.lr2, due)
+
+    def test_num_queries_constant_in_records(self):
+        # Again, use self.lr & self.lr2 as objects purely for
+        # convenience.
+        kwargs = {'interval': 'DAY', 'offset': timedelta(0), 'timezone': pytz.timezone('US/Eastern')}
+        lr3 = LocalizedRecurrence.objects.create(**kwargs)
+        lr4 = LocalizedRecurrence.objects.create(**kwargs)
+        self.lr.sub_recurrence(self.lr)
+        self.lr.sub_recurrence(self.lr2)
+        self.lr.sub_recurrence(lr3)
+        self.lr.sub_recurrence(lr4)
+        self.lr.update_schedule(for_object=self.lr2)
+        # Even if we have a ton of objects tracked, if they're all of
+        # the same content-type, there should be exactly _four_
+        # queries.
+        with self.assertNumQueries(4):
+            self.lr.check_due([self.lr, self.lr2, lr3, lr4])
+
+    def test_num_queries(self):
+        """Stress test number of queries with different contenttypes.
+
+        The check_due method should avoid hitting the database as much
+        as possible. Here we check the performance characteristics
+        with multiple content types.
+
+        We expect the number of queries to expand linearly with the
+        number of different content types in the sub-recurrences
+        because of how prefetch_related works, but the number of
+        queries should not increase in the number of tracked objects.
+        """
+        # Here, to get different content-types, we use both localized
+        # recurrence instances and RecurrenceForObject instances. This
+        # is an ugly hack, but they're the only content types we have
+        # available.
+        kwargs = {'interval': 'DAY', 'offset': timedelta(0), 'timezone': pytz.timezone('US/Eastern')}
+        lr3 = LocalizedRecurrence.objects.create(**kwargs)
+        lr4 = LocalizedRecurrence.objects.create(**kwargs)
+        self.lr.sub_recurrence(self.lr)
+        self.lr.sub_recurrence(self.lr2)
+        self.lr.sub_recurrence(lr3)
+        self.lr.sub_recurrence(lr4)
+        rfos = RecurrenceForObject.objects.all()[:4]
+        for rfo in rfos:
+            self.lr.sub_recurrence(rfo)
+        self.lr.update_schedule(for_object=self.lr2)
+        self.lr.update_schedule(for_object=rfos[0])
+        with self.assertNumQueries(6):
+            self.lr.check_due([self.lr, self.lr2, rfos[0], rfos[1]])
+
+
 class Test_LocalizedRecurrence_sub_recurrence(TestCase):
     def setUp(self):
         self.lr = LocalizedRecurrence.objects.create(
             interval='DAY',
-            offset=timedelta(hours=12),
+            offset=timedelta(0),
             timezone=pytz.timezone('US/Eastern'),
         )
 

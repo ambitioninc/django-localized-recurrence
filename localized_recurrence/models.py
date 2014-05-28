@@ -47,14 +47,49 @@ class LocalizedRecurrence(models.Model):
 
     objects = LocalizedRecurrenceManager()
 
+    def check_due(self, objects, time=None):
+        """Return all the objects that are past due.
+
+        Args:
+          objects - a list of objects to check if they are due.
+          time (optional) - a time
+
+        Side Effect:
+
+          Any objects creates a RecurrenceForObject for each object in
+          the `objects` argument missing.
+
+        Returns
+
+          A list of all the objects from the `objects` argument where
+          their `next_scheduled` is less than the `time` arguement (or
+          utcnow()). Objects that were not previously tracked will
+          automatically be returned.
+        """
+        time = time or datetime.utcnow()
+        recurrences = self.recurrenceforobject_set.prefetch_related('content_object').all()
+        all_scheduled_objs = set(r.content_object for r in recurrences)
+        past_due = set(r.content_object for r in recurrences.filter(next_scheduled__lt=time))
+
+        due = []
+        for obj in objects:
+            if obj in all_scheduled_objs and obj in past_due:
+                due.append(obj)
+            elif obj not in all_scheduled_objs:
+                due.append(obj)
+                self.sub_recurrence(obj)
+        return due
+
     def sub_recurrence(self, for_object):
+        """Return the sub_recurrence for the given object.
+        """
         ct = ContentType.objects.get_for_model(for_object)
-        obj, created = RecurrenceForObject.objects.get_or_create(
+        sub, created = RecurrenceForObject.objects.get_or_create(
             recurrence=self,
             content_type=ct,
             object_id=for_object.id
         )
-        return obj
+        return sub
 
     def update_schedule(self, time=None, for_object=None):
         _update_schedule([self], time, for_object)
