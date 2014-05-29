@@ -6,7 +6,7 @@ from mock import MagicMock, patch
 from .. import fields
 
 
-class Test_DurationField_to_python(unittest.TestCase):
+class DurationFieldToPythonTest(unittest.TestCase):
     def setUp(self):
         """Create a mock of the DurationField class and pin to_python to it.
         """
@@ -57,7 +57,7 @@ class Test_DurationField_to_python(unittest.TestCase):
             self.df.to_python(td_in)
 
 
-class Test_DurationField_get_prep_value(unittest.TestCase):
+class DurationFieldGetPrepValueTest(unittest.TestCase):
     def setUp(self):
         """Create a mock of the DurationField class and pin get_prep_value.
         """
@@ -86,7 +86,7 @@ class Test_DurationField_get_prep_value(unittest.TestCase):
         self.assertEqual(td_out, td_in)
 
 
-class Test_DurationField_value_to_string(unittest.TestCase):
+class DurationFieldValueToStringTest(unittest.TestCase):
     def setUp(self):
         """Create a mock of the DurationField class and pin value_to_string to it.
 
@@ -118,7 +118,7 @@ class Test_DurationField_value_to_string(unittest.TestCase):
         self.assertEqual(out_td, in_td)
 
 
-class Test_parse_timedelta_string(unittest.TestCase):
+class ParseTimedeltaStringTest(unittest.TestCase):
     """Test some round trips between timedelta, string, timedelta.
     """
     def test_works(self):
@@ -153,7 +153,7 @@ class Test_parse_timedelta_string(unittest.TestCase):
         self.assertEqual(td6_in, td6_out)
 
 
-class Test_setup_south(unittest.TestCase):
+class SetupSouthTest(unittest.TestCase):
     def test_no_south(self):
         """This test is meant to hit the branch handleing the ImportError for
         south.
