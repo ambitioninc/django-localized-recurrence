@@ -2,6 +2,7 @@ import os
 
 from django.conf import settings
 
+
 def configure_settings():
     """
     Configures settings for manage.py and for run_tests.py.
@@ -38,4 +39,3 @@ def configure_settings():
             ROOT_URLCONF='localized_recurrence.urls',
             DEBUG=False,
         )
-
