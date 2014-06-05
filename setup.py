@@ -21,6 +21,7 @@ setup(
     version=get_version(),
     packages=find_packages(),
     include_package_data=True,
+    zip_safe=False,
     license='MIT License',
     description='Store events that recur in users\' local times.',
     long_description=open('README.rst').read(),
