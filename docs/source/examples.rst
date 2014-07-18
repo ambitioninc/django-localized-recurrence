@@ -2,7 +2,7 @@ Examples
 ========
 
 A Calendar Event Example
---------------------------------------------------
+------------------------
 
 In this example we create a basic Calendar event, which store
 recurring events. The benefits of using a localized recurrence in this
@@ -13,7 +13,9 @@ the conversion between a user's local time and UTC, even across
 daylight savings time boundaries is automatically handled by the
 recurrence updates.
 
-We start by defining a model with a foreign key to ``LocalizedRecurrence``. ::
+We start by defining a model with a foreign key to ``LocalizedRecurrence``.
+
+.. code-block:: python
 
 
     from django.contrib.auth.models import User
@@ -30,7 +32,9 @@ We start by defining a model with a foreign key to ``LocalizedRecurrence``. ::
         objects = RecurringCalendarEventManager()
 
 To go along with the event model, we create a manager that can create
-the localized recurrence and event at the same time. ::
+the localized recurrence and event at the same time.
+
+.. code-block:: python
 
     class RecurringCalendarEventManager(models.Manager):
         def create_event(self, name, description, user, timezone, offset, interval):
@@ -51,7 +55,9 @@ Then, in a file ``views.py`` we can create two views. The first is a
 view that is intended to show a simple calendar but that first checks
 to see if there are any events that are due to be shown the user. It
 does this by filtering on the ``next_scheduled`` field of the associated
-``LocalizedRecurrence`` objects. ::
+``LocalizedRecurrence`` objects.
+
+.. code-block:: python
 
     from datetime import datetime
 
@@ -76,7 +82,9 @@ view that displays any of the events that are past due. In this view,
 the ``get_context_data`` takes care of both passing the events to the
 template, but also updating the ``LocalizedRecurrence`` objects so that
 their ``next_scheduled`` fields are automatically set to the appropriate
-time in the future. ::
+time in the future.
+
+.. code-block:: python
 
     class CalendarNotification(TemplateView):
         template_name = 'calendar/event_notification.html'
