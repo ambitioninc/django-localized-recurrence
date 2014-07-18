@@ -1,13 +1,90 @@
 Contributing
-==================================================
+============
 
-Contributions are welcome, through issues or pull requests. If any
-part of the codebase or documentation is unclear, feel free to ask for
-clarification.
+Contributions and issues are most welcome! All issues and pull requests are
+handled through github on the `ambitioninc repository`_. Also, please check for
+any existing issues before filing a new one. If you have a great idea but it
+involves big changes, please file a ticket before making a pull request! We
+want to make sure you don't spend your time coding something that might not fit
+the scope of the project.
 
-This codebase has a 100% test coverage requirement. The when
-submitting a pull request Travis CI will indicate if 100% test
-coverage is reached as part of the build passing/failing. Pull
-requests should include tests to maintain 100% test coverage (if
-getting to 100% is a concern, still make the pull request, but please
-add a comment explaining that 100% test coverage isn't met).
+.. _ambitioninc repository: https://github.com/ambitioninc/django-localized-recurrence/issues
+
+Running the tests
+-----------------
+
+To get the source source code and run the unit tests, run::
+
+    $ git clone git://github.com/ambitioninc/django-localized-recurrence.git
+    $ cd django-localized-recurrence
+    $ virtualenv env
+    $ . env/bin/activate
+    $ python setup.py install
+    $ coverage run setup.py test
+    $ coverage report
+
+While 100% code coverage does not make a library bug-free, it significantly
+reduces the number of easily caught bugs! Please make sure coverage is at 100%
+before submitting a pull request.
+
+Code Quality
+------------
+
+For code quality, and style consistency please run flake8::
+
+    $ pip install flake8
+    $ flake8 .
+
+This project treats all flake8 warnings as errors. They should be
+fixed before submitting a pull request.
+
+Code Styling
+------------
+Please arrange imports with the following style
+
+.. code-block:: python
+
+    # Standard library imports
+    import os
+
+    # Third party package imports
+    from mock import patch
+    from django.conf import settings
+
+    # Local package imports
+    from localized_recurrence.version import __version__
+
+Please follow `Google's python style`_ guide wherever possible.
+
+.. _Google's python style: http://google-styleguide.googlecode.com/svn/trunk/pyguide.html
+
+Building the docs
+-----------------
+
+When in the project directory::
+
+    $ pip install -r requirements/docs.txt
+    $ pip uninstall -y localized_recurrence && python setup.py install
+    $ cd docs && make html
+    $ open docs/_build/html/index.html
+
+Release Checklist
+-----------------
+
+To create a new release, please go through each step of the following
+checklist:
+
+* Bump version in localized_recurrence/version.py
+* Git tag the version
+* Add a release note in docs/release_notes.rst
+* Upload to pypi
+
+Vulnerability Reporting
+-----------------------
+
+For any security issues, please do NOT file an issue or pull request on github!
+Please contact `security@ambition.com`_ with the GPG key provided on `Ambition's
+website`_.
+
+.. _security@ambition.com: mailto:security@ambition.com
+.. _Ambition's website: http://ambition.com/security/
