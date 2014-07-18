@@ -7,7 +7,6 @@
 
 import os
 import re
-import sys
 
 def get_version():
     """
@@ -20,10 +19,6 @@ def get_version():
     else:
         raise RuntimeError('Unable to find version string in {0}.'.format(VERSION_FILE))
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
 
 # -- General configuration ------------------------------------------------
 
@@ -137,3 +132,9 @@ texinfo_documents = [
    u'Erik Swanson', 'DjangoLocalizedRecurrence', 'One line description of project.',
    'Miscellaneous'),
 ]
+
+# -- Django configuration -------------------------------------------------
+import sys
+sys.path.insert(0, os.path.abspath('../..'))
+from settings import configure_settings
+configure_settings()
