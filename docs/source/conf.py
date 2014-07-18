@@ -5,14 +5,15 @@
 # This file is execfile()d with the current directory set to its
 # containing dir.
 
-import sys
 import os
+import re
+import sys
 
 def get_version():
     """
     Extracts the version number from the version.py file.
     """
-    VERSION_FILE = '../version.py'
+    VERSION_FILE = '../../localized_recurrence/version.py'
     mo = re.search(r'^__version__ = [\'"]([^\'"]*)[\'"]', open(VERSION_FILE, 'rt').read(), re.M)
     if mo:
         return mo.group(1)
