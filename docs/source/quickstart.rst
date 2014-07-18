@@ -1,25 +1,27 @@
 Quickstart and Basic Usage
-==================================================
+==========================
 
 Django localized recurrence allows you to store a single instance of
-the LocalizedRecurrence model for an event that occurs
+the ``LocalizedRecurrence`` model for an event that occurs
 regularly. Localized recurrences also automatically ensure that the
 events remain consistent for the users local times.
 
 The basic usage of the library comes in two steps:
 
-1. Create a recurrence to keep track of a recurring event
+1. Create a recurrence to keep track of a recurring event.
 2. When appropriate, check if the event is due to be acted on, and
    take the appropriate action.
 
-After describing the basic usage, this document will give a more
-detailed description of a possible use case.
-
 Creating a recurrence
---------------------------------------------------
+---------------------
 
-The following is an example of a daily recurring event, at 3:00 PM in
-the user's local time in the Eastern United States. ::
+Creating a recurring event is as simple as creating an instance of
+:py:class:`localized_recurrence.models.LocalizedRecurrence` using the
+standard ``create`` method of django model managers. The following is
+an example of a daily recurring event, at 3:00 PM in the user's local
+time in the Eastern United States.
+
+.. code-block:: python
 
     from datetime import timedelta
 
@@ -31,23 +33,13 @@ the user's local time in the Eastern United States. ::
         timezone='US/Eastern',
     )
 
-The arguments to create this event are:
+Once a localized recurrence is created, it is simply a static object
+in the database. However, it comes with methods that make it extremely
+easy to know if the recurrence is due to be acted on.
 
-- interval: One of the three character strings: 'DAY', 'WEEK', or
-  'MONTH', specifying how often the event happens.
-
-- offset: A python timedelta containing the amount of time into the
-  interval the event is supposed to recur. That is, if the interval is
-  daily, then a recurrence at 3:00 PM daily would correspond to an
-  ``offset`` of ``timedelta(hours=15)``. If the interval is weekly, then a
-  recurrence at 1:00 AM on Tuesday would correspond to an ``offset`` of
-  ``timedelta(days=1, hours=1)``.
-
-- timezone: A string (or timezone object) that can be accepted into a
-  pytz timezone_field, representing the timezone of the user.
 
 Acting on a recurrence
---------------------------------------------------
+----------------------
 
 Django localized-recurrence does not specify a method for checking
 when recurrences are due. The user of this app is in complete control
@@ -61,13 +53,41 @@ limits itself to two actions.
 1. Checking when the event is next scheduled to recur.
 2. Updating the event to have occured in this interval.
 
-With this model, the first step is to check if a ``LocalizedRecurrence``
-is due to occur. For a given ``LocalizedRecurrence`` object, called, say
-``my_daily_event``, this check is as simple as::
+Acting on a single recurrence object
+````````````````````````````````````
 
-    my_daily_event.next_scheduled < datetime.utcnow()
+Given a ``LocalizedRecurrence`` object, called, say
+``my_daily_event``, checking when an object is next scheduled to
+recurr is as simple as checking the ``next_scheduled`` property of a
+recurrence instance, which stores the time, in UTC, of when it is next
+due.
 
-Or, to find all the ``LocalizedRecurrence`` instance which are due::
+.. code-block:: python
+
+    if my_daily_event.next_scheduled < datetime.utcnow():
+        # Process the event / Do stuff.
+
+Then, once you are done processing the event, its schedule needs to be
+updated so that it will not be due to be scheduled until its interval
+has passed. This is as simple as calling the ``update_schedule``
+method on the instance.
+
+.. code-block:: python
+
+    my_daily_event.update_schedule()
+
+Calling this method updates the ``next_scheduled`` field on the model
+in a way that makes sure it will recur only at the appropriate time
+for its interval and timezone.
+
+
+Acting on many recurrence objects
+`````````````````````````````````
+
+To find all the ``LocalizedRecurrence`` instance which are due we can
+use django's built in ORM tools to filter based on the current UTC time.
+
+.. code-block:: python
 
     past_due = LocalizedRecurrence.objects.filter(next_scheduled__lte=datetime.utcnow())
 
@@ -83,8 +103,3 @@ With that call, django-localized-recurrence takes care of any local
 time changes in the interval, and sets the ``next_scheduled`` field of
 each object to the time, in UTC, of the event, as the user would
 expect it for their local time.
-
-To update a single record, first filter to that get record::
-
-     LocalizedRecurrence.objects.filter(id=my_daily_event.id).update_schedule()
-
