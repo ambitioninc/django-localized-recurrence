@@ -17,6 +17,8 @@ Table of Contents
    :maxdepth: 2
 
    installation
+   quickstart
+   examples
    ref/localized_recurrence
    contributing
 
