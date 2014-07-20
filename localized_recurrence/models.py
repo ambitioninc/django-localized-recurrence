@@ -37,7 +37,8 @@ class LocalizedRecurrenceManager(models.Manager):
 
 
 class LocalizedRecurrence(models.Model):
-    """The information necessary to act on events in users local times.
+    """The information necessary to act on events in users local
+    times. Can be instantiated with ``LocalizedRecurrence.objects.create``
 
     :type interval: str
     :param interval: The interval at which the event recurs.
@@ -49,6 +50,36 @@ class LocalizedRecurrence(models.Model):
 
     :type timezone: pytz.timezone
     :param timezone: The local timezone for the user.
+
+    Localized recurrences are simply objects in the database. They can
+    be created with standard django ORM tools:
+
+    .. code-block:: python
+
+        >>> from datetime import datetime, timedelta
+        >>> my_lr = LocalizedRecurrence.objects.create(
+        ...     interval='DAY',
+        ...     offset=timedela(hours=15),
+        ...     timezone=pytz.timedelta('US/Eastern'),
+        ... )
+
+    Once instantiated it is simple to check if a localized recurrence
+    is due to be acted upon.
+
+    .. code-block:: python
+
+        >>> my_lr.next_scheduled < datetime.utcnow()
+        True
+
+    After a recurrence has been acted upon, it's schedule can be
+    simply reset to occur at the prescribed time in the next interval.
+
+    .. code-block:: python
+
+        >>> my_lr.update_schedule()
+        >>> my_lr.next_scheduled < datetime.utcnow()
+        False
+
     """
     interval = models.CharField(max_length=18, default='DAY', choices=INTERVAL_CHOICES)
     offset = DurationField(default=timedelta(0))
