@@ -38,6 +38,17 @@ class LocalizedRecurrenceManager(models.Manager):
 
 class LocalizedRecurrence(models.Model):
     """The information necessary to act on events in users local times.
+
+    :type interval: str
+    :param interval: The interval at which the event recurs.
+        One of ``'DAY'``, ``'WEEK'``, ``'MONTH'``.
+
+    :type offset: :py:class:`datetime.timedelta`
+    :param offset: The amount of time into the interval that the event
+        occurs at.
+
+    :type timezone: pytz.timezone
+    :param timezone: The local timezone for the user.
     """
     interval = models.CharField(max_length=18, default='DAY', choices=INTERVAL_CHOICES)
     offset = DurationField(default=timedelta(0))

@@ -23,4 +23,4 @@ Fields
 
 .. automodule:: localized_recurrence.fields
 
-.. autoclass:: DurationField
+.. autoclass:: localized_recurrence.fields.DurationField

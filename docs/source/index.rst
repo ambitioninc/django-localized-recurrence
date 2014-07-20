@@ -11,7 +11,7 @@ users local times.
 
 
 Table of Contents
-----------------
+-----------------
 
 .. toctree::
    :maxdepth: 2
