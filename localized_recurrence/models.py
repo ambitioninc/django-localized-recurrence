@@ -19,8 +19,27 @@ INTERVAL_CHOICES = (
 
 
 class LocalizedRecurrenceQuerySet(models.query.QuerySet):
-    def update_schedule(self, time=None, for_object=None):
-        _update_schedule(self, time=time, for_object=for_object)
+    def update_schedule(self, time=None):
+        """Update the schedule times for all the provided recurrences.
+
+        :type time: :py:class:`datetime.datetime`
+        :param time: The time the schedule was checked. If ``None``,
+            defaults to ``datetime.utcnow``.
+
+        In the common case, this can be called without any arguments.
+
+        .. code-block:: python
+
+            >>> past_due = LocalizedRecurrence.objects.filter(
+            ...     next_scheduled__lte=datetime.utcnow()
+            ... )
+            >>> # Do something with past_due recurrences
+            >>> past_due.update_schedule()
+
+        The code above will ensure that all the processed recurrences
+        are re-scheduled for their next recurrence.
+        """
+        _update_schedule(self, time=time)
 
 
 class LocalizedRecurrenceManager(models.Manager):
@@ -168,28 +187,6 @@ class RecurrenceForObject(models.Model):
 
 def _update_schedule(recurrences, time=None, for_object=None):
         """Update the schedule times for all the provided recurrences.
-
-        Args:
-          recurrences - an iterable of LocalizedRecurrence objects to
-          update (either directly, or their component objects)
-
-          time - The time the schedule was checked. If None, defaults
-          to utcnow.
-
-          for_object - Any instance of a django model. Allows a single
-          recurrence to be updated for multiple
-          users/entities/objects/etc.
-
-        Side Effects:
-          If `for_object` is None, updates the `next_scheduled` and
-          `previous_scheduled` fields for every recurrence in the
-          iterable.
-
-          If `for_object` is not None, creates or updates the
-          `next_scheduled` and `previous_scheduled` fields on a
-          `RecurrenceForObject` instance associated with each
-          recurrence in the iterable.
-
         """
         time = time or datetime.utcnow()
         if for_object is None:

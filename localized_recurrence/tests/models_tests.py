@@ -53,35 +53,6 @@ class LocalizedRecurrenceQuerySetUpdateScheduleTest(TestCase):
         LocalizedRecurrence.objects.update_schedule(time=time)
         self.assertTrue(all(r.next_scheduled > time for r in LocalizedRecurrence.objects.all()))
 
-    def test_update_schedule_for_object_creates(self):
-        lr_day2 = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern')
-        )
-        # we just re-use lr_day2 here because it's convenient, not
-        # because it's a sensible object.
-        LocalizedRecurrence.objects.filter(id=lr_day2.id).update_schedule(for_object=lr_day2)
-        expected = 1
-        num_recurrence_for_obj = RecurrenceForObject.objects.count()
-        self.assertEqual(num_recurrence_for_obj, expected)
-
-    def test_updates_correctly(self):
-        time = datetime(year=2013, month=5, day=20, hour=15, minute=3)
-        lr_day2 = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern')
-        )
-        # again, re-using lr_day2 here because it's convenient.
-        LocalizedRecurrence.objects.filter(id=lr_day2.id).update_schedule(
-            for_object=lr_day2, time=time)
-        ct = ContentType.objects.get_for_model(lr_day2)
-        individual_recurrence = lr_day2.recurrenceforobject_set.get(
-            object_id=lr_day2.id, content_type=ct)
-        self.assertGreater(individual_recurrence.next_scheduled, time)
-        self.assertEqual(individual_recurrence.previous_scheduled, time)
-
 
 class LocalizedRecurrenceTest(TestCase):
     """Test the creation and querying of LocalizedRecurrence records.
