@@ -92,21 +92,25 @@ class LocalizedRecurrence(models.Model):
     def check_due(self, objects, time=None):
         """Return all the objects that are past due.
 
-        Args:
-          objects - a list of objects to check if they are due.
-          time (optional) - a time
+        This function is used to track a number of objects using a
+        single localized recurrence. An object stored in the database
+        can be tracked.
 
-        Side Effect:
+        :type objects: list of model instances
+        :param objects: This list of objects all recur on the same
+            frequency, but may not have been acted upon yet.
 
-          Any objects creates a RecurrenceForObject for each object in
-          the `objects` argument missing.
+        :type time: :py:class:`datetime.datetime`
+        :param time: Check if the objects are due at this time. If
+            ``None`` defaults to ``datetime.utcnow()``.
 
-        Returns
+        :rtype: list of model instance
+        :returns: The list of objects passed in, filtered such that
+            only those objects that are due (their next scheduled time
+            is before the given ``time``) are included.
 
-          A list of all the objects from the `objects` argument where
-          their `next_scheduled` is less than the `time` arguement (or
-          utcnow()). Objects that were not previously tracked will
-          automatically be returned.
+        If an object has not been checked before, it will
+        automatically be returned.
         """
         time = time or datetime.utcnow()
         recurrences = self.recurrenceforobject_set.prefetch_related('content_object').all()
