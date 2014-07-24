@@ -142,11 +142,11 @@ class LocalizedRecurrence(models.Model):
                 due.append(obj)
             elif obj not in all_scheduled_objs:
                 due.append(obj)
-                self.sub_recurrence(obj)
+                self._sub_recurrence(obj)
         return due
 
-    def sub_recurrence(self, for_object):
-        """Return the sub_recurrence for the given object.
+    def _sub_recurrence(self, for_object):
+        """Return the :class:`.RecurrenceForObject` of the given object.
         """
         ct = ContentType.objects.get_for_model(for_object)
         sub, created = RecurrenceForObject.objects.get_or_create(

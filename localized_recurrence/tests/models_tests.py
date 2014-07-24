@@ -102,8 +102,8 @@ class LocalizedRecurrenceCheckDueTest(TestCase):
     def test_returns_due(self):
         # Again, use self.lr & self.lr2 as objects purely for
         # convenience.
-        self.lr.sub_recurrence(self.lr)
-        self.lr.sub_recurrence(self.lr2)
+        self.lr._sub_recurrence(self.lr)
+        self.lr._sub_recurrence(self.lr2)
         self.lr.update_schedule(for_object=self.lr2)
         due = self.lr.check_due([self.lr, self.lr2])
         self.assertIn(self.lr, due)
@@ -111,8 +111,8 @@ class LocalizedRecurrenceCheckDueTest(TestCase):
     def test_filters_not_due(self):
         # Again, use self.lr & self.lr2 as objects purely for
         # convenience.
-        self.lr.sub_recurrence(self.lr)
-        self.lr.sub_recurrence(self.lr2)
+        self.lr._sub_recurrence(self.lr)
+        self.lr._sub_recurrence(self.lr2)
         self.lr.update_schedule(for_object=self.lr2)
         due = self.lr.check_due([self.lr, self.lr2])
         self.assertNotIn(self.lr2, due)
@@ -123,10 +123,10 @@ class LocalizedRecurrenceCheckDueTest(TestCase):
         kwargs = {'interval': 'DAY', 'offset': timedelta(0), 'timezone': pytz.timezone('US/Eastern')}
         lr3 = LocalizedRecurrence.objects.create(**kwargs)
         lr4 = LocalizedRecurrence.objects.create(**kwargs)
-        self.lr.sub_recurrence(self.lr)
-        self.lr.sub_recurrence(self.lr2)
-        self.lr.sub_recurrence(lr3)
-        self.lr.sub_recurrence(lr4)
+        self.lr._sub_recurrence(self.lr)
+        self.lr._sub_recurrence(self.lr2)
+        self.lr._sub_recurrence(lr3)
+        self.lr._sub_recurrence(lr4)
         self.lr.update_schedule(for_object=self.lr2)
         # Even if we have a ton of objects tracked, if they're all of
         # the same content-type, there should be exactly _four_
@@ -153,13 +153,13 @@ class LocalizedRecurrenceCheckDueTest(TestCase):
         kwargs = {'interval': 'DAY', 'offset': timedelta(0), 'timezone': pytz.timezone('US/Eastern')}
         lr3 = LocalizedRecurrence.objects.create(**kwargs)
         lr4 = LocalizedRecurrence.objects.create(**kwargs)
-        self.lr.sub_recurrence(self.lr)
-        self.lr.sub_recurrence(self.lr2)
-        self.lr.sub_recurrence(lr3)
-        self.lr.sub_recurrence(lr4)
+        self.lr._sub_recurrence(self.lr)
+        self.lr._sub_recurrence(self.lr2)
+        self.lr._sub_recurrence(lr3)
+        self.lr._sub_recurrence(lr4)
         rfos = RecurrenceForObject.objects.all()[:4]
         for rfo in rfos:
-            self.lr.sub_recurrence(rfo)
+            self.lr._sub_recurrence(rfo)
         self.lr.update_schedule(for_object=self.lr2)
         self.lr.update_schedule(for_object=rfos[0])
         with self.assertNumQueries(6):
@@ -175,12 +175,12 @@ class LocalizedRecurrenceSubRecurrenceTest(TestCase):
         )
 
     def test_creates(self):
-        self.lr.sub_recurrence(for_object=self.lr)
+        self.lr._sub_recurrence(for_object=self.lr)
         self.assertEqual(RecurrenceForObject.objects.count(), 1)
 
     def test_gets(self):
-        self.lr.sub_recurrence(for_object=self.lr)
-        obj = self.lr.sub_recurrence(for_object=self.lr)
+        self.lr._sub_recurrence(for_object=self.lr)
+        obj = self.lr._sub_recurrence(for_object=self.lr)
         from pprint import pprint
         pprint([r.__dict__ for r in RecurrenceForObject.objects.all()])
         self.assertEqual(RecurrenceForObject.objects.count(), 1)
