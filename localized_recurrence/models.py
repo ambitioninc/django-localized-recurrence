@@ -24,7 +24,7 @@ class LocalizedRecurrenceQuerySet(models.query.QuerySet):
 
         :type time: :py:class:`datetime.datetime`
         :param time: The time the schedule was checked. If ``None``,
-            defaults to ``datetime.utcnow``.
+            defaults to ``datetime.utcnow()``.
 
         In the common case, this can be called without any arguments.
 
@@ -157,6 +157,17 @@ class LocalizedRecurrence(models.Model):
         return sub
 
     def update_schedule(self, time=None, for_object=None):
+        """Update the schedule for this recurrence or an object it tracks.
+
+        :type time: :py:class:`datetime.datetime`
+        :param time: The time the schedule was checked. If ``None``,
+            defaults to ``datetime.utcnow()``.
+
+        :type for_object: django model instance
+        :param for_object: Optional. Update the schedule for the
+            given object on the recurrence, rather than the the
+            schedule of the recurrence itself.
+        """
         _update_schedule([self], time, for_object)
 
     def utc_of_next_schedule(self, current_time):
