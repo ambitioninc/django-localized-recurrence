@@ -46,13 +46,19 @@ class LocalizedRecurrenceManager(models.Manager):
     def get_queryset(self):
         return LocalizedRecurrenceQuerySet(self.model)
 
-    def __getattr__(self, name):
+    def update_schedule(self, time=None):
+        """Update the schedule times for all recurrences.
+
+        Functions exactly the same as the method on the querysets. The
+        following to calls are equivalent:
+
+        .. code-block:: python
+
+            >>> LocalizedRecurrence.objects.all().update_schedule()
+            >>> LocalizedRecurrence.objects.update_schedule()
+
         """
-        Written to allow both:
-            - LocalizedRecurrence.objects.update_schedule()
-            - LocalizedRecurrence.filter(id=my_recurrence.id).update_schedule()
-        """
-        return getattr(self.get_queryset(), name)
+        self.get_queryset().update_schedule(time=time)
 
 
 class LocalizedRecurrence(models.Model):

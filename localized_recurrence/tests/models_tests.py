@@ -46,11 +46,25 @@ class LocalizedRecurrenceQuerySetUpdateScheduleTest(TestCase):
         lr_day = LocalizedRecurrence.objects.filter(interval='DAY').first()
         self.assertGreater(lr_day.next_scheduled, time)
 
+
+class LocalizedRecurrenceManagerUpdateScheduleTest(TestCase):
+    def setUp(self):
+        self.lr_day = LocalizedRecurrence.objects.create(
+            interval='DAY',
+            offset=timedelta(hours=12),
+            timezone=pytz.timezone('US/Eastern'),
+        )
+        self.lr_month = LocalizedRecurrence.objects.create(
+            interval='MONTH',
+            offset=timedelta(hours=15),
+            timezone=pytz.timezone('US/Eastern'),
+        )
+
     def test_update_all(self):
         """Calls to the model manager to update should be passed through.
         """
         time = datetime(year=2013, month=5, day=20, hour=15, minute=3)
-        LocalizedRecurrence.objects.update_schedule(time=time)
+        LocalizedRecurrence.update_schedule(time=time)
         self.assertTrue(all(r.next_scheduled > time for r in LocalizedRecurrence.objects.all()))
 
 
