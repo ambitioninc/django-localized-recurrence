@@ -172,7 +172,7 @@ class LocalizedRecurrence(models.Model):
 
     def utc_of_next_schedule(self, current_time):
         local_time = fleming.convert_to_tz(current_time, self.timezone)
-        local_scheduled_time = replace_with_offset(local_time, self.offset, self.interval)
+        local_scheduled_time = _replace_with_offset(local_time, self.offset, self.interval)
         utc_scheduled_time = fleming.convert_to_tz(local_scheduled_time, pytz.utc, return_naive=True)
         if utc_scheduled_time <= current_time:
             additional_time = {
@@ -218,7 +218,7 @@ def _update_schedule(recurrences, time=None, for_object=None):
                 obj.save()
 
 
-def replace_with_offset(dt, offset, interval):
+def _replace_with_offset(dt, offset, interval):
     """Replace components of a datetime with those of a timedelta.
 
     This replacement is done within the given interval. This means the

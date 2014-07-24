@@ -5,7 +5,7 @@ from django.test import TestCase
 import pytz
 
 from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet, RecurrenceForObject
-from ..models import replace_with_offset, _update_schedule
+from ..models import _replace_with_offset, _update_schedule
 
 
 class LocalizedRecurrenceQuerySetTest(TestCase):
@@ -370,44 +370,44 @@ class UpdateScheduleTest(TestCase):
 
 class ReplaceWithOffsetTest(TestCase):
     def test_day(self):
-        """replace_with_offset works as expected with a 'DAY' interval.
+        """_replace_with_offset works as expected with a 'DAY' interval.
         """
         dt_in = datetime(2013, 1, 20, 12, 45, 48)
         td_in = timedelta(hours=3, minutes=3, seconds=3)
         interval_in = 'DAY'
         dt_expected = datetime(2013, 1, 20, 3, 3, 3)
-        dt_out = replace_with_offset(dt_in, td_in, interval_in)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_out, dt_expected)
 
     def test_week(self):
-        """replace_with_offset works as expected with a 'WEEK' interval.
+        """_replace_with_offset works as expected with a 'WEEK' interval.
         """
         dt_in = datetime(2013, 1, 20, 12, 45, 48)
         td_in = timedelta(days=4, hours=3, minutes=3, seconds=3)
         interval_in = 'WEEK'
         dt_expected = datetime(2013, 1, 18, 3, 3, 3)
-        dt_out = replace_with_offset(dt_in, td_in, interval_in)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_out, dt_expected)
 
     def test_week_on_month_boundary(self):
-        """replace_with_offset using interval 'WEEK' should roll over months
+        """_replace_with_offset using interval 'WEEK' should roll over months
         correctly.
         """
         dt_in = datetime(2013, 7, 30, 12, 45, 48)
         td_in = timedelta(days=4, hours=3, minutes=3, seconds=3)
         interval_in = 'WEEK'
         dt_expected = datetime(2013, 8, 2, 3, 3, 3)
-        dt_out = replace_with_offset(dt_in, td_in, interval_in)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_out, dt_expected)
 
     def test_month(self):
-        """replace_with_offset works as expected with a 'MONTH' interval.
+        """_replace_with_offset works as expected with a 'MONTH' interval.
         """
         dt_in = datetime(2013, 1, 20, 12, 45, 48)
         td_in = timedelta(days=15, hours=3, minutes=3, seconds=3)
         interval_in = 'MONTH'
         dt_expected = datetime(2013, 1, 16, 3, 3, 3)
-        dt_out = replace_with_offset(dt_in, td_in, interval_in)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_out, dt_expected)
 
     def test_bad_interval(self):
@@ -417,4 +417,4 @@ class ReplaceWithOffsetTest(TestCase):
         td_in = timedelta(days=15, hours=3, minutes=3, seconds=3)
         interval_in = 'blah'
         with self.assertRaises(ValueError):
-            replace_with_offset(dt_in, td_in, interval_in)
+            _replace_with_offset(dt_in, td_in, interval_in)
