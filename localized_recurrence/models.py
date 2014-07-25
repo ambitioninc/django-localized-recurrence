@@ -38,6 +38,10 @@ class LocalizedRecurrenceQuerySet(models.query.QuerySet):
 
         The code above will ensure that all the processed recurrences
         are re-scheduled for their next recurrence.
+
+        Calling this function has the side effect that the
+        ``next_scheduled`` attribute of every recurrence in the
+        queryset will be updated to the new time in utc.
         """
         _update_schedule(self, time=time)
 
@@ -57,6 +61,9 @@ class LocalizedRecurrenceManager(models.Manager):
             >>> LocalizedRecurrence.objects.all().update_schedule()
             >>> LocalizedRecurrence.objects.update_schedule()
 
+        Calling this function has the side effect that the
+        ``next_scheduled`` attribute of every recurrence will be
+        updated to the new time in utc.
         """
         self.get_queryset().update_schedule(time=time)
 
@@ -173,10 +180,25 @@ class LocalizedRecurrence(models.Model):
         :param for_object: Optional. Update the schedule for the
             given object on the recurrence, rather than the the
             schedule of the recurrence itself.
+
+        Calling this function has the side effect that the
+        ``next_scheduled`` attribute will be updated to the new time
+        in utc.
         """
         _update_schedule([self], time, for_object)
 
     def utc_of_next_schedule(self, current_time):
+        """The time in UTC of this instance's next recurrence.
+
+        :type current_time: :py:class:`datetime.datetime`
+        :param current_time: The current time in utc.
+
+        Usually this function does not need to be called directly, but
+        will be used by ``update_schedule``. If however, you need to
+        check when the next recurrence of a instance would happen,
+        without persisting an update to the schedule, this funciton
+        can be called without side-effect.
+        """
         local_time = fleming.convert_to_tz(current_time, self.timezone)
         local_scheduled_time = _replace_with_offset(local_time, self.offset, self.interval)
         utc_scheduled_time = fleming.convert_to_tz(local_scheduled_time, pytz.utc, return_naive=True)
