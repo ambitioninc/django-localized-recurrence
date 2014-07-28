@@ -19,25 +19,99 @@ INTERVAL_CHOICES = (
 
 
 class LocalizedRecurrenceQuerySet(models.query.QuerySet):
-    def update_schedule(self, time=None, for_object=None):
-        _update_schedule(self, time=time, for_object=for_object)
+    def update_schedule(self, time=None):
+        """Update the schedule times for all the provided recurrences.
+
+        :type time: :py:class:`datetime.datetime`
+        :param time: The time the schedule was checked. If ``None``,
+            defaults to ``datetime.utcnow()``.
+
+        In the common case, this can be called without any arguments.
+
+        .. code-block:: python
+
+            >>> past_due = LocalizedRecurrence.objects.filter(
+            ...     next_scheduled__lte=datetime.utcnow()
+            ... )
+            >>> # Do something with past_due recurrences
+            >>> past_due.update_schedule()
+
+        The code above will ensure that all the processed recurrences
+        are re-scheduled for their next recurrence.
+
+        Calling this function has the side effect that the
+        ``next_scheduled`` attribute of every recurrence in the
+        queryset will be updated to the new time in utc.
+        """
+        _update_schedule(self, time=time)
 
 
 class LocalizedRecurrenceManager(models.Manager):
     def get_queryset(self):
         return LocalizedRecurrenceQuerySet(self.model)
 
-    def __getattr__(self, name):
+    def update_schedule(self, time=None):
+        """Update the schedule times for all recurrences.
+
+        Functions exactly the same as the method on the querysets. The
+        following to calls are equivalent:
+
+        .. code-block:: python
+
+            >>> LocalizedRecurrence.objects.all().update_schedule()
+            >>> LocalizedRecurrence.objects.update_schedule()
+
+        Calling this function has the side effect that the
+        ``next_scheduled`` attribute of every recurrence will be
+        updated to the new time in utc.
         """
-        Written to allow both:
-            - LocalizedRecurrence.objects.update_schedule()
-            - LocalizedRecurrence.filter(id=my_recurrence.id).update_schedule()
-        """
-        return getattr(self.get_queryset(), name)
+        self.get_queryset().update_schedule(time=time)
 
 
 class LocalizedRecurrence(models.Model):
-    """The information necessary to act on events in users local times.
+    """The information necessary to act on events in users local
+    times. Can be instantiated with ``LocalizedRecurrence.objects.create``
+
+    :type interval: str
+    :param interval: The interval at which the event recurs.
+        One of ``'DAY'``, ``'WEEK'``, ``'MONTH'``.
+
+    :type offset: :py:class:`datetime.timedelta`
+    :param offset: The amount of time into the interval that the event
+        occurs at.
+
+    :type timezone: pytz.timezone
+    :param timezone: The local timezone for the user.
+
+    Localized recurrences are simply objects in the database. They can
+    be created with standard django ORM tools:
+
+    .. code-block:: python
+
+        >>> from datetime import datetime, timedelta
+        >>> my_lr = LocalizedRecurrence.objects.create(
+        ...     interval='DAY',
+        ...     offset=timedela(hours=15),
+        ...     timezone=pytz.timedelta('US/Eastern'),
+        ... )
+
+    Once instantiated it is simple to check if a localized recurrence
+    is due to be acted upon.
+
+    .. code-block:: python
+
+        >>> my_lr.next_scheduled < datetime.utcnow()
+        True
+
+    After a recurrence has been acted upon, it's schedule can be
+    simply reset to occur at the prescribed time in the next interval.
+
+    .. code-block:: python
+
+        >>> my_lr.update_schedule()
+        >>> my_lr.next_scheduled < datetime.utcnow()
+        False
+
     """
     interval = models.CharField(max_length=18, default='DAY', choices=INTERVAL_CHOICES)
     offset = DurationField(default=timedelta(0))
@@ -50,21 +124,25 @@ class LocalizedRecurrence(models.Model):
     def check_due(self, objects, time=None):
         """Return all the objects that are past due.
 
-        Args:
-          objects - a list of objects to check if they are due.
-          time (optional) - a time
+        This function is used to track a number of objects using a
+        single localized recurrence. An object stored in the database
+        can be tracked.
 
-        Side Effect:
+        :type objects: list of model instances
+        :param objects: This list of objects all recur on the same
+            frequency, but may not have been acted upon yet.
 
-          Any objects creates a RecurrenceForObject for each object in
-          the `objects` argument missing.
+        :type time: :py:class:`datetime.datetime`
+        :param time: Check if the objects are due at this time. If
+            ``None`` defaults to ``datetime.utcnow()``.
 
-        Returns
+        :rtype: list of model instance
+        :returns: The list of objects passed in, filtered such that
+            only those objects that are due (their next scheduled time
+            is before the given ``time``) are included.
 
-          A list of all the objects from the `objects` argument where
-          their `next_scheduled` is less than the `time` arguement (or
-          utcnow()). Objects that were not previously tracked will
-          automatically be returned.
+        If an object has not been checked before, it will
+        automatically be returned.
         """
         time = time or datetime.utcnow()
         recurrences = self.recurrenceforobject_set.prefetch_related('content_object').all()
@@ -77,11 +155,11 @@ class LocalizedRecurrence(models.Model):
                 due.append(obj)
             elif obj not in all_scheduled_objs:
                 due.append(obj)
-                self.sub_recurrence(obj)
+                self._sub_recurrence(obj)
         return due
 
-    def sub_recurrence(self, for_object):
-        """Return the sub_recurrence for the given object.
+    def _sub_recurrence(self, for_object):
+        """Return the :class:`.RecurrenceForObject` of the given object.
         """
         ct = ContentType.objects.get_for_model(for_object)
         sub, created = RecurrenceForObject.objects.get_or_create(
@@ -92,11 +170,37 @@ class LocalizedRecurrence(models.Model):
         return sub
 
     def update_schedule(self, time=None, for_object=None):
+        """Update the schedule for this recurrence or an object it tracks.
+
+        :type time: :py:class:`datetime.datetime`
+        :param time: The time the schedule was checked. If ``None``,
+            defaults to ``datetime.utcnow()``.
+
+        :type for_object: django model instance
+        :param for_object: Optional. Update the schedule for the
+            given object on the recurrence, rather than the the
+            schedule of the recurrence itself.
+
+        Calling this function has the side effect that the
+        ``next_scheduled`` attribute will be updated to the new time
+        in utc.
+        """
         _update_schedule([self], time, for_object)
 
     def utc_of_next_schedule(self, current_time):
+        """The time in UTC of this instance's next recurrence.
+
+        :type current_time: :py:class:`datetime.datetime`
+        :param current_time: The current time in utc.
+
+        Usually this function does not need to be called directly, but
+        will be used by ``update_schedule``. If however, you need to
+        check when the next recurrence of a instance would happen,
+        without persisting an update to the schedule, this funciton
+        can be called without side-effect.
+        """
         local_time = fleming.convert_to_tz(current_time, self.timezone)
-        local_scheduled_time = replace_with_offset(local_time, self.offset, self.interval)
+        local_scheduled_time = _replace_with_offset(local_time, self.offset, self.interval)
         utc_scheduled_time = fleming.convert_to_tz(local_scheduled_time, pytz.utc, return_naive=True)
         if utc_scheduled_time <= current_time:
             additional_time = {
@@ -122,28 +226,6 @@ class RecurrenceForObject(models.Model):
 
 def _update_schedule(recurrences, time=None, for_object=None):
         """Update the schedule times for all the provided recurrences.
-
-        Args:
-          recurrences - an iterable of LocalizedRecurrence objects to
-          update (either directly, or their component objects)
-
-          time - The time the schedule was checked. If None, defaults
-          to utcnow.
-
-          for_object - Any instance of a django model. Allows a single
-          recurrence to be updated for multiple
-          users/entities/objects/etc.
-
-        Side Effects:
-          If `for_object` is None, updates the `next_scheduled` and
-          `previous_scheduled` fields for every recurrence in the
-          iterable.
-
-          If `for_object` is not None, creates or updates the
-          `next_scheduled` and `previous_scheduled` fields on a
-          `RecurrenceForObject` instance associated with each
-          recurrence in the iterable.
-
         """
         time = time or datetime.utcnow()
         if for_object is None:
@@ -164,7 +246,7 @@ def _update_schedule(recurrences, time=None, for_object=None):
                 obj.save()
 
 
-def replace_with_offset(dt, offset, interval):
+def _replace_with_offset(dt, offset, interval):
     """Replace components of a datetime with those of a timedelta.
 
     This replacement is done within the given interval. This means the

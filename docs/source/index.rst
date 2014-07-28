@@ -3,24 +3,22 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Django Localized Recurrence documentation.
-==================================================
+Django Localized Recurrence
+===========================
 
-Contents:
+Localized Recurrences help you keep track of events that recur in your
+users local times.
+
+
+Table of Contents
+-----------------
 
 .. toctree::
    :maxdepth: 2
 
    installation
    quickstart
-   license
+   examples
+   ref/localized_recurrence
    contributing
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
 

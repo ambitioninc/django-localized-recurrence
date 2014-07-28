@@ -5,7 +5,7 @@ from django.test import TestCase
 import pytz
 
 from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet, RecurrenceForObject
-from ..models import replace_with_offset, _update_schedule
+from ..models import _replace_with_offset, _update_schedule
 
 
 class LocalizedRecurrenceQuerySetTest(TestCase):
@@ -46,41 +46,26 @@ class LocalizedRecurrenceQuerySetUpdateScheduleTest(TestCase):
         lr_day = LocalizedRecurrence.objects.filter(interval='DAY').first()
         self.assertGreater(lr_day.next_scheduled, time)
 
+
+class LocalizedRecurrenceManagerUpdateScheduleTest(TestCase):
+    def setUp(self):
+        self.lr_day = LocalizedRecurrence.objects.create(
+            interval='DAY',
+            offset=timedelta(hours=12),
+            timezone=pytz.timezone('US/Eastern'),
+        )
+        self.lr_month = LocalizedRecurrence.objects.create(
+            interval='MONTH',
+            offset=timedelta(hours=15),
+            timezone=pytz.timezone('US/Eastern'),
+        )
+
     def test_update_all(self):
         """Calls to the model manager to update should be passed through.
         """
         time = datetime(year=2013, month=5, day=20, hour=15, minute=3)
         LocalizedRecurrence.objects.update_schedule(time=time)
         self.assertTrue(all(r.next_scheduled > time for r in LocalizedRecurrence.objects.all()))
-
-    def test_update_schedule_for_object_creates(self):
-        lr_day2 = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern')
-        )
-        # we just re-use lr_day2 here because it's convenient, not
-        # because it's a sensible object.
-        LocalizedRecurrence.objects.filter(id=lr_day2.id).update_schedule(for_object=lr_day2)
-        expected = 1
-        num_recurrence_for_obj = RecurrenceForObject.objects.count()
-        self.assertEqual(num_recurrence_for_obj, expected)
-
-    def test_updates_correctly(self):
-        time = datetime(year=2013, month=5, day=20, hour=15, minute=3)
-        lr_day2 = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern')
-        )
-        # again, re-using lr_day2 here because it's convenient.
-        LocalizedRecurrence.objects.filter(id=lr_day2.id).update_schedule(
-            for_object=lr_day2, time=time)
-        ct = ContentType.objects.get_for_model(lr_day2)
-        individual_recurrence = lr_day2.recurrenceforobject_set.get(
-            object_id=lr_day2.id, content_type=ct)
-        self.assertGreater(individual_recurrence.next_scheduled, time)
-        self.assertEqual(individual_recurrence.previous_scheduled, time)
 
 
 class LocalizedRecurrenceTest(TestCase):
@@ -131,8 +116,8 @@ class LocalizedRecurrenceCheckDueTest(TestCase):
     def test_returns_due(self):
         # Again, use self.lr & self.lr2 as objects purely for
         # convenience.
-        self.lr.sub_recurrence(self.lr)
-        self.lr.sub_recurrence(self.lr2)
+        self.lr._sub_recurrence(self.lr)
+        self.lr._sub_recurrence(self.lr2)
         self.lr.update_schedule(for_object=self.lr2)
         due = self.lr.check_due([self.lr, self.lr2])
         self.assertIn(self.lr, due)
@@ -140,8 +125,8 @@ class LocalizedRecurrenceCheckDueTest(TestCase):
     def test_filters_not_due(self):
         # Again, use self.lr & self.lr2 as objects purely for
         # convenience.
-        self.lr.sub_recurrence(self.lr)
-        self.lr.sub_recurrence(self.lr2)
+        self.lr._sub_recurrence(self.lr)
+        self.lr._sub_recurrence(self.lr2)
         self.lr.update_schedule(for_object=self.lr2)
         due = self.lr.check_due([self.lr, self.lr2])
         self.assertNotIn(self.lr2, due)
@@ -152,10 +137,10 @@ class LocalizedRecurrenceCheckDueTest(TestCase):
         kwargs = {'interval': 'DAY', 'offset': timedelta(0), 'timezone': pytz.timezone('US/Eastern')}
         lr3 = LocalizedRecurrence.objects.create(**kwargs)
         lr4 = LocalizedRecurrence.objects.create(**kwargs)
-        self.lr.sub_recurrence(self.lr)
-        self.lr.sub_recurrence(self.lr2)
-        self.lr.sub_recurrence(lr3)
-        self.lr.sub_recurrence(lr4)
+        self.lr._sub_recurrence(self.lr)
+        self.lr._sub_recurrence(self.lr2)
+        self.lr._sub_recurrence(lr3)
+        self.lr._sub_recurrence(lr4)
         self.lr.update_schedule(for_object=self.lr2)
         # Even if we have a ton of objects tracked, if they're all of
         # the same content-type, there should be exactly _four_
@@ -182,13 +167,13 @@ class LocalizedRecurrenceCheckDueTest(TestCase):
         kwargs = {'interval': 'DAY', 'offset': timedelta(0), 'timezone': pytz.timezone('US/Eastern')}
         lr3 = LocalizedRecurrence.objects.create(**kwargs)
         lr4 = LocalizedRecurrence.objects.create(**kwargs)
-        self.lr.sub_recurrence(self.lr)
-        self.lr.sub_recurrence(self.lr2)
-        self.lr.sub_recurrence(lr3)
-        self.lr.sub_recurrence(lr4)
+        self.lr._sub_recurrence(self.lr)
+        self.lr._sub_recurrence(self.lr2)
+        self.lr._sub_recurrence(lr3)
+        self.lr._sub_recurrence(lr4)
         rfos = RecurrenceForObject.objects.all()[:4]
         for rfo in rfos:
-            self.lr.sub_recurrence(rfo)
+            self.lr._sub_recurrence(rfo)
         self.lr.update_schedule(for_object=self.lr2)
         self.lr.update_schedule(for_object=rfos[0])
         with self.assertNumQueries(6):
@@ -204,12 +189,12 @@ class LocalizedRecurrenceSubRecurrenceTest(TestCase):
         )
 
     def test_creates(self):
-        self.lr.sub_recurrence(for_object=self.lr)
+        self.lr._sub_recurrence(for_object=self.lr)
         self.assertEqual(RecurrenceForObject.objects.count(), 1)
 
     def test_gets(self):
-        self.lr.sub_recurrence(for_object=self.lr)
-        obj = self.lr.sub_recurrence(for_object=self.lr)
+        self.lr._sub_recurrence(for_object=self.lr)
+        obj = self.lr._sub_recurrence(for_object=self.lr)
         from pprint import pprint
         pprint([r.__dict__ for r in RecurrenceForObject.objects.all()])
         self.assertEqual(RecurrenceForObject.objects.count(), 1)
@@ -399,44 +384,44 @@ class UpdateScheduleTest(TestCase):
 
 class ReplaceWithOffsetTest(TestCase):
     def test_day(self):
-        """replace_with_offset works as expected with a 'DAY' interval.
+        """_replace_with_offset works as expected with a 'DAY' interval.
         """
         dt_in = datetime(2013, 1, 20, 12, 45, 48)
         td_in = timedelta(hours=3, minutes=3, seconds=3)
         interval_in = 'DAY'
         dt_expected = datetime(2013, 1, 20, 3, 3, 3)
-        dt_out = replace_with_offset(dt_in, td_in, interval_in)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_out, dt_expected)
 
     def test_week(self):
-        """replace_with_offset works as expected with a 'WEEK' interval.
+        """_replace_with_offset works as expected with a 'WEEK' interval.
         """
         dt_in = datetime(2013, 1, 20, 12, 45, 48)
         td_in = timedelta(days=4, hours=3, minutes=3, seconds=3)
         interval_in = 'WEEK'
         dt_expected = datetime(2013, 1, 18, 3, 3, 3)
-        dt_out = replace_with_offset(dt_in, td_in, interval_in)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_out, dt_expected)
 
     def test_week_on_month_boundary(self):
-        """replace_with_offset using interval 'WEEK' should roll over months
+        """_replace_with_offset using interval 'WEEK' should roll over months
         correctly.
         """
         dt_in = datetime(2013, 7, 30, 12, 45, 48)
         td_in = timedelta(days=4, hours=3, minutes=3, seconds=3)
         interval_in = 'WEEK'
         dt_expected = datetime(2013, 8, 2, 3, 3, 3)
-        dt_out = replace_with_offset(dt_in, td_in, interval_in)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_out, dt_expected)
 
     def test_month(self):
-        """replace_with_offset works as expected with a 'MONTH' interval.
+        """_replace_with_offset works as expected with a 'MONTH' interval.
         """
         dt_in = datetime(2013, 1, 20, 12, 45, 48)
         td_in = timedelta(days=15, hours=3, minutes=3, seconds=3)
         interval_in = 'MONTH'
         dt_expected = datetime(2013, 1, 16, 3, 3, 3)
-        dt_out = replace_with_offset(dt_in, td_in, interval_in)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_out, dt_expected)
 
     def test_bad_interval(self):
@@ -446,4 +431,4 @@ class ReplaceWithOffsetTest(TestCase):
         td_in = timedelta(days=15, hours=3, minutes=3, seconds=3)
         interval_in = 'blah'
         with self.assertRaises(ValueError):
-            replace_with_offset(dt_in, td_in, interval_in)
+            _replace_with_offset(dt_in, td_in, interval_in)
