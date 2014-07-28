@@ -8,14 +8,39 @@ from django.db.models.fields import IntegerField
 class DurationField(IntegerField):
     """A field to store durations of time with accuracy to the second.
 
-    Automatically converts between python timedelta objects and
-    database integers.
+    A Duration Field will automatically convert between python
+    timedelta objects and database integers.
+
+    Duration fields can be used to define fields in a django model
+
+    .. code-block:: python
+
+        class Presentations(models.Model):
+            length = DurationField()
+            speaker = models.ForeignKey(User)
+            location = models.ForeignKey(Location)
+
+    Given such a model, storing a duration in the database is as
+    simple as passing in a ``timedelta`` object
+
+    .. code-block:: python
+
+        >>> Presentations.objects.create(
+        ...     length=datetime.timedelta(minutes=45),
+        ...     speaker=User.objects.get(email='MrT@example.com'),
+        ...     location=wrestle_mania_ring,
+        ... )
 
     The timedeltas are stored as seconds in the backend, so sub-second
     accuracy is lost with this field.
+
     """
     description = "A duration of time."
     __metaclass__ = SubfieldBase
+
+    def __init__(self, *args, **kwargs):
+        """Call out to the super. Makes docs cleaner."""
+        return super(DurationField, self).__init__(*args, **kwargs)
 
     def to_python(self, value):
         """Convert a stored duration into a python datetime.timedelta object.
