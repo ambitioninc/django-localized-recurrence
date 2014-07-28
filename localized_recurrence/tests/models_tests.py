@@ -64,7 +64,7 @@ class LocalizedRecurrenceManagerUpdateScheduleTest(TestCase):
         """Calls to the model manager to update should be passed through.
         """
         time = datetime(year=2013, month=5, day=20, hour=15, minute=3)
-        LocalizedRecurrence.update_schedule(time=time)
+        LocalizedRecurrence.objects.update_schedule(time=time)
         self.assertTrue(all(r.next_scheduled > time for r in LocalizedRecurrence.objects.all()))
 
 
