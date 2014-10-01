@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta
 
-from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
 import pytz
 
-from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet, RecurrenceForObject
+from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet
 from ..models import _replace_with_offset, _update_schedule
 
 
@@ -93,114 +92,6 @@ class LocalizedRecurrenceTest(TestCase):
         self.assertTrue(isinstance(lr.offset, timedelta))
 
 
-class LocalizedRecurrenceCheckDueTest(TestCase):
-    def setUp(self):
-        self.lr = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(0),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-        self.lr2 = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(0),
-            timezone=pytz.timezone('US/Central'),
-        )
-
-    def test_creates(self):
-        # We use self.lr as the object purely for convenience, not
-        # because it is a sensible choice.
-        due = self.lr.check_due([self.lr])
-        self.assertEqual(len(due), 1)
-        self.assertEqual(RecurrenceForObject.objects.count(), 1)
-
-    def test_returns_due(self):
-        # Again, use self.lr & self.lr2 as objects purely for
-        # convenience.
-        self.lr._sub_recurrence(self.lr)
-        self.lr._sub_recurrence(self.lr2)
-        self.lr.update_schedule(for_object=self.lr2)
-        due = self.lr.check_due([self.lr, self.lr2])
-        self.assertIn(self.lr, due)
-
-    def test_filters_not_due(self):
-        # Again, use self.lr & self.lr2 as objects purely for
-        # convenience.
-        self.lr._sub_recurrence(self.lr)
-        self.lr._sub_recurrence(self.lr2)
-        self.lr.update_schedule(for_object=self.lr2)
-        due = self.lr.check_due([self.lr, self.lr2])
-        self.assertNotIn(self.lr2, due)
-
-    def test_num_queries_constant_in_records(self):
-        # Again, use self.lr & self.lr2 as objects purely for
-        # convenience.
-        kwargs = {'interval': 'DAY', 'offset': timedelta(0), 'timezone': pytz.timezone('US/Eastern')}
-        lr3 = LocalizedRecurrence.objects.create(**kwargs)
-        lr4 = LocalizedRecurrence.objects.create(**kwargs)
-        self.lr._sub_recurrence(self.lr)
-        self.lr._sub_recurrence(self.lr2)
-        self.lr._sub_recurrence(lr3)
-        self.lr._sub_recurrence(lr4)
-        self.lr.update_schedule(for_object=self.lr2)
-        # Even if we have a ton of objects tracked, if they're all of
-        # the same content-type, there should be exactly _four_
-        # queries.
-        with self.assertNumQueries(4):
-            self.lr.check_due([self.lr, self.lr2, lr3, lr4])
-
-    def test_num_queries(self):
-        """Stress test number of queries with different contenttypes.
-
-        The check_due method should avoid hitting the database as much
-        as possible. Here we check the performance characteristics
-        with multiple content types.
-
-        We expect the number of queries to expand linearly with the
-        number of different content types in the sub-recurrences
-        because of how prefetch_related works, but the number of
-        queries should not increase in the number of tracked objects.
-        """
-        # Here, to get different content-types, we use both localized
-        # recurrence instances and RecurrenceForObject instances. This
-        # is an ugly hack, but they're the only content types we have
-        # available.
-        kwargs = {'interval': 'DAY', 'offset': timedelta(0), 'timezone': pytz.timezone('US/Eastern')}
-        lr3 = LocalizedRecurrence.objects.create(**kwargs)
-        lr4 = LocalizedRecurrence.objects.create(**kwargs)
-        self.lr._sub_recurrence(self.lr)
-        self.lr._sub_recurrence(self.lr2)
-        self.lr._sub_recurrence(lr3)
-        self.lr._sub_recurrence(lr4)
-        rfos = RecurrenceForObject.objects.all()[:4]
-        for rfo in rfos:
-            self.lr._sub_recurrence(rfo)
-        self.lr.update_schedule(for_object=self.lr2)
-        self.lr.update_schedule(for_object=rfos[0])
-        with self.assertNumQueries(6):
-            self.lr.check_due([self.lr, self.lr2, rfos[0], rfos[1]])
-
-
-class LocalizedRecurrenceSubRecurrenceTest(TestCase):
-    def setUp(self):
-        self.lr = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(0),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-
-    def test_creates(self):
-        self.lr._sub_recurrence(for_object=self.lr)
-        self.assertEqual(RecurrenceForObject.objects.count(), 1)
-
-    def test_gets(self):
-        self.lr._sub_recurrence(for_object=self.lr)
-        obj = self.lr._sub_recurrence(for_object=self.lr)
-        from pprint import pprint
-        pprint([r.__dict__ for r in RecurrenceForObject.objects.all()])
-        self.assertEqual(RecurrenceForObject.objects.count(), 1)
-        self.assertEqual(obj.content_object, self.lr)
-
-
 class LocalizedRecurrenceUpdateScheduleTest(TestCase):
     def setUp(self):
         self.lr_day = LocalizedRecurrence.objects.create(
@@ -213,14 +104,6 @@ class LocalizedRecurrenceUpdateScheduleTest(TestCase):
         time = datetime(year=2013, month=5, day=20, hour=15, minute=3)
         self.lr_day.update_schedule(time)
         self.assertGreater(self.lr_day.next_scheduled, time)
-
-    def test_update_passes_through_for_obj(self):
-        time = datetime(year=2013, month=5, day=20, hour=15, minute=3)
-        self.lr_day.update_schedule(time, self.lr_day)
-        ct = ContentType.objects.get_for_model(self.lr_day)
-        individual_recurrence = self.lr_day.recurrenceforobject_set.get(
-            object_id=self.lr_day.id, content_type=ct)
-        self.assertGreater(individual_recurrence.next_scheduled, time)
 
 
 class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
@@ -370,16 +253,6 @@ class UpdateScheduleTest(TestCase):
         _update_schedule([self.lr_week], time)
         self.assertGreater(self.lr_week.next_scheduled, time)
         self.assertEqual(self.lr_week.previous_scheduled, time)
-
-    def test_updates_recurrence_for_objects(self):
-        time = datetime(year=2013, month=5, day=20, hour=12, minute=3)
-        _update_schedule([self.lr_week], time, for_object=self.lr_week)
-        obj_recurrence = self.lr_week.recurrenceforobject_set.get(
-            object_id=self.lr_week.id,
-            content_type=ContentType.objects.get_for_model(self.lr_week)
-        )
-        self.assertGreater(obj_recurrence.next_scheduled, time)
-        self.assertEqual(obj_recurrence.previous_scheduled, time)
 
 
 class ReplaceWithOffsetTest(TestCase):
