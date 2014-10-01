@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from django.test import TestCase
+from django_dynamic_fixture import G
 import pytz
 
 from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet
@@ -10,14 +11,8 @@ from ..models import _replace_with_offset, _update_schedule
 class LocalizedRecurrenceQuerySetTest(TestCase):
     """Simple test to ensure the custom query set is being used.
     """
-    def setUp(self):
-        self.lr_day = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-
     def test_isinstance(self):
+        G(LocalizedRecurrence)
         recurrences = LocalizedRecurrence.objects.all()
         self.assertIsInstance(recurrences, LocalizedRecurrenceQuerySet)
 
@@ -26,16 +21,8 @@ class LocalizedRecurrenceQuerySetUpdateScheduleTest(TestCase):
     """Test that updates to recurrences are reflected in the DB.
     """
     def setUp(self):
-        self.lr_day = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-        self.lr_month = LocalizedRecurrence.objects.create(
-            interval='MONTH',
-            offset=timedelta(hours=15),
-            timezone=pytz.timezone('US/Eastern'),
-        )
+        G(LocalizedRecurrence, interval='DAY', offset=timedelta(hours=12), timezone=pytz.timezone('US/Eastern'))
+        G(LocalizedRecurrence, interval='MONTH', offset=timedelta(hours=15), timezone=pytz.timezone('US/Eastern'))
 
     def test_update_from_1970(self):
         """Start with next_scheduled of 1970, after update should be new.
@@ -48,16 +35,8 @@ class LocalizedRecurrenceQuerySetUpdateScheduleTest(TestCase):
 
 class LocalizedRecurrenceManagerUpdateScheduleTest(TestCase):
     def setUp(self):
-        self.lr_day = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-        self.lr_month = LocalizedRecurrence.objects.create(
-            interval='MONTH',
-            offset=timedelta(hours=15),
-            timezone=pytz.timezone('US/Eastern'),
-        )
+        G(LocalizedRecurrence, interval='DAY', offset=timedelta(hours=12), timezone=pytz.timezone('US/Eastern'))
+        G(LocalizedRecurrence, interval='MONTH', offset=timedelta(hours=15), timezone=pytz.timezone('US/Eastern'))
 
     def test_update_all(self):
         """Calls to the model manager to update should be passed through.
@@ -71,19 +50,7 @@ class LocalizedRecurrenceTest(TestCase):
     """Test the creation and querying of LocalizedRecurrence records.
     """
     def setUp(self):
-        self.lr = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-
-    def test_creation_works(self):
-        """Create a single record and get it back in a queryset.
-
-        The record is created in setUp, we just test the return here.
-        """
-        lr_count = LocalizedRecurrence.objects.all().count()
-        self.assertEqual(lr_count, 1)
+        G(LocalizedRecurrence, interval='DAY', offset=timedelta(hours=12), timezone=pytz.timezone('US/Eastern'))
 
     def test_timedelta_returned(self):
         """Test that the Duration field is correctly returning timedeltas.
@@ -94,11 +61,8 @@ class LocalizedRecurrenceTest(TestCase):
 
 class LocalizedRecurrenceUpdateScheduleTest(TestCase):
     def setUp(self):
-        self.lr_day = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
+        self.lr_day = G(LocalizedRecurrence,
+                        interval='DAY', offset=timedelta(hours=12), timezone=pytz.timezone('US/Eastern'))
 
     def test_update_passes_through(self):
         time = datetime(year=2013, month=5, day=20, hour=15, minute=3)
@@ -108,23 +72,20 @@ class LocalizedRecurrenceUpdateScheduleTest(TestCase):
 
 class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
     def setUp(self):
-        self.lr_day = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
+        self.lr_day = G(
+            LocalizedRecurrence,
+            interval='DAY', offset=timedelta(hours=12),
+            timezone=pytz.timezone('US/Eastern'))
 
-        self.lr_week = LocalizedRecurrence.objects.create(
-            interval='WEEK',
-            offset=timedelta(days=3, hours=17, minutes=30),
-            timezone=pytz.timezone('US/Central')
-        )
+        self.lr_week = G(
+            LocalizedRecurrence,
+            interval='WEEK', offset=timedelta(days=3, hours=17, minutes=30),
+            timezone=pytz.timezone('US/Central'))
 
-        self.lr_month = LocalizedRecurrence.objects.create(
-            interval='MONTH',
-            offset=timedelta(days=21, hours=19, minutes=15, seconds=10),
-            timezone=pytz.timezone('US/Central')
-        )
+        self.lr_month = G(
+            LocalizedRecurrence,
+            interval='MONTH', offset=timedelta(days=21, hours=19, minutes=15, seconds=10),
+            timezone=pytz.timezone('US/Central'))
 
     def test_basic_works(self):
         """Test a simple case of utc_of_next_schedule.
@@ -237,16 +198,15 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
 
 class UpdateScheduleTest(TestCase):
     def setUp(self):
-        self.lr_week = LocalizedRecurrence.objects.create(
-            interval='WEEK',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-        self.lr_week = LocalizedRecurrence.objects.create(
+        self.lr_week = G(
+            LocalizedRecurrence,
+            interval='WEEK', offset=timedelta(hours=12),
+            timezone=pytz.timezone('US/Eastern'))
+        self.lr_day = G(
+            LocalizedRecurrence,
             interval='DAY',
             offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
+            timezone=pytz.timezone('US/Eastern'))
 
     def test_updates_localized_recurrences(self):
         time = datetime(year=2013, month=5, day=20, hour=12, minute=3)
