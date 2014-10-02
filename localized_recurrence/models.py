@@ -75,11 +75,17 @@ class LocalizedRecurrence(models.Model):
 
     :type interval: str
     :param interval: The interval at which the event recurs.
-        One of ``'DAY'``, ``'WEEK'``, ``'MONTH'``.
+        One of ``'DAY'``, ``'WEEK'``, ``'MONTH'``, ``'QUARTER'``, ``'YEAR'``.
 
     :type offset: :py:class:`datetime.timedelta`
     :param offset: The amount of time into the interval that the event
         occurs at.
+
+        If the interval is monthly, quarterly, or yearly, the number
+        of days in the interval are variable. In the case of offsets
+        with more days than the number of days in the interval,
+        updating the schedule will not raise an error, but will update
+        to the last day in the interval if necessary.
 
     :type timezone: pytz.timezone
     :param timezone: The local timezone for the user.
