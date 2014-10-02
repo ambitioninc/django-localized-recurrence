@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import calendar
 
 from dateutil.relativedelta import relativedelta
 from django.db import models
@@ -183,11 +184,9 @@ def _replace_with_offset(dt, offset, interval):
         dt_out = dt + timedelta(days=offset.days - dt.weekday())
         dt_out = dt_out.replace(hour=hours, minute=minutes, second=seconds)
     elif interval == 'month':
-        # TODO:
-        #     - Modify so it works with the last day of the month
-        #     - As per: http://stackoverflow.com/questions/42950/get-last-day-of-the-month-in-python
-        #     - Add test for: e.g. February 30th.
-        dt_out = dt.replace(day=offset.days + 1, hour=hours, minute=minutes, second=seconds)
+        _, last_day = calendar.monthrange(dt.year, dt.month)
+        day = (offset.days + 1) if (offset.days + 1) <= last_day else last_day
+        dt_out = dt.replace(day=day, hour=hours, minute=minutes, second=seconds)
     else:
         raise ValueError('{i} is not a proper interval value'.format(i=interval))
     return dt_out

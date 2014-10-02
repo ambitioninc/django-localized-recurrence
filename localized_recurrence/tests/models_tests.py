@@ -257,6 +257,14 @@ class ReplaceWithOffsetTest(TestCase):
         dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_out, dt_expected)
 
+    def test_last_day_of_month(self):
+        dt_in = datetime(2013, 2, 20, 12, 45, 48)
+        td_in = timedelta(days=31, hours=3, minutes=3, seconds=3)
+        interval_in = 'MONTH'
+        dt_expected = datetime(2013, 2, 28, 3, 3, 3)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_out, dt_expected)
+
     def test_bad_interval(self):
         """A missformed interval should raise a value error
         """
