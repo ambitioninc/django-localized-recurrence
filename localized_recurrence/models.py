@@ -198,8 +198,10 @@ def _replace_with_offset(dt, offset, interval):
         dt_out = fleming.floor(dt, month=3).replace(hour=hours, minute=minutes, second=seconds)
         dt_out += timedelta(days)
     elif interval == 'year':
+        leap_year_extra_days = 1 if calendar.isleap(dt.year) else 0
+        days = offset.days if offset.days <= 364 + leap_year_extra_days else 364 + leap_year_extra_days
         dt_out = fleming.floor(dt, year=1).replace(hour=hours, minute=minutes, second=seconds)
-        dt_out += timedelta(offset.days)
+        dt_out += timedelta(days)
     else:
         raise ValueError('{i} is not a proper interval value'.format(i=interval))
     return dt_out

@@ -335,6 +335,22 @@ class ReplaceWithOffsetTest(TestCase):
         dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_expected, dt_out)
 
+    def test_year_end_leap_year(self):
+        dt_in = datetime(2016, 6, 23, 0, 34, 55)
+        td_in = timedelta(days=365, hours=16, minutes=30)
+        interval_in = 'YEAR'
+        dt_expected = datetime(2016, 12, 31, 16, 30)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_expected, dt_out)
+
+    def test_year_end_non_leap_year(self):
+        dt_in = datetime(2015, 6, 23, 0, 34, 55)
+        td_in = timedelta(days=365, hours=16, minutes=30)
+        interval_in = 'YEAR'
+        dt_expected = datetime(2015, 12, 31, 16, 30)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_expected, dt_out)
+
     def test_bad_interval(self):
         """A missformed interval should raise a value error
         """
