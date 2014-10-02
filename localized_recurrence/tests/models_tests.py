@@ -311,6 +311,22 @@ class ReplaceWithOffsetTest(TestCase):
         dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_expected, dt_out)
 
+    def test_quarterly_overshoot(self):
+        dt_in = datetime(2013, 1, 1, 0)
+        td_in = timedelta(days=90, hours=12)
+        interval_in = 'QUARTER'
+        dt_expected = datetime(2013, 3, 31, 12)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_expected, dt_out)
+
+    def test_quarterly_undershoot(self):
+        dt_in = datetime(2013, 7, 1, 0)
+        td_in = timedelta(days=90, hours=12)
+        interval_in = 'QUARTER'
+        dt_expected = datetime(2013, 9, 29, 12)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_expected, dt_out)
+
     def test_year(self):
         dt_in = datetime(2013, 6, 23, 0, 34, 55)
         td_in = timedelta(days=5, hours=16, minutes=30)
