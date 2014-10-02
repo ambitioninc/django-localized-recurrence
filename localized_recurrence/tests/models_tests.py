@@ -76,16 +76,18 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
             LocalizedRecurrence,
             interval='DAY', offset=timedelta(hours=12),
             timezone=pytz.timezone('US/Eastern'))
-
         self.lr_week = G(
             LocalizedRecurrence,
             interval='WEEK', offset=timedelta(days=3, hours=17, minutes=30),
             timezone=pytz.timezone('US/Central'))
-
         self.lr_month = G(
             LocalizedRecurrence,
             interval='MONTH', offset=timedelta(days=21, hours=19, minutes=15, seconds=10),
             timezone=pytz.timezone('US/Central'))
+        self.lr_quarter = G(
+            LocalizedRecurrence,
+            interval='QUARTER', offset=timedelta(days=68, hours=16, minutes=30),
+            timezone=pytz.timezone('Asia/Hong_Kong'))
 
     def test_basic_works(self):
         """Test a simple case of utc_of_next_schedule.
@@ -149,6 +151,18 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         current_time = datetime(2013, 8, 23, 0, 34, 55)
         expected_next_schedule = datetime(2013, 9, 23, 0, 15, 10)
         schedule_out = self.lr_month.utc_of_next_schedule(current_time)
+        self.assertEqual(schedule_out, expected_next_schedule)
+
+    def test_quarterly(self):
+        """Monthly Recurrences should work as expected.
+
+        - June 23rd at 12:34 AM UTC is June 22nd at 10:34 PM HKT.
+        - Scheduled for Quarterly, on the 68th day at 4:30 PM HKT
+        - Expect next schedule to be September 8th at 8:30 AM UTC
+        """
+        current_time = datetime(2013, 6, 23, 0, 34, 55)
+        expected_next_schedule = datetime(2013, 9, 8, 8, 30)
+        schedule_out = self.lr_quarter.utc_of_next_schedule(current_time)
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_into_dst_boundary(self):
@@ -264,6 +278,22 @@ class ReplaceWithOffsetTest(TestCase):
         dt_expected = datetime(2013, 2, 28, 3, 3, 3)
         dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_out, dt_expected)
+
+    def test_quarter(self):
+        dt_in = datetime(2013, 4, 20, 12, 45, 48)
+        td_in = timedelta(days=65, hours=3, minutes=3, seconds=3)
+        interval_in = 'QUARTER'
+        dt_expected = datetime(2013, 6, 5, 3, 3, 3)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_out, dt_expected)
+
+    def test_quarterly_past(self):
+        dt_in = datetime(2013, 6, 23, 0, 34, 55)
+        td_in = timedelta(days=68, hours=16, minutes=30)
+        interval_in = 'QUARTER'
+        dt_expected = datetime(2013, 6, 8, 16, 30)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_expected, dt_out)
 
     def test_bad_interval(self):
         """A missformed interval should raise a value error

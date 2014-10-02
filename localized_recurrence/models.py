@@ -13,7 +13,9 @@ from .fields import DurationField
 INTERVAL_CHOICES = (
     ('DAY', 'Day'),
     ('WEEK', 'Week'),
-    ('MONTH', 'Month')
+    ('MONTH', 'Month'),
+    ('QUARTER', 'Quarter'),
+    ('YEAR', 'Year'),
 )
 
 
@@ -152,7 +154,9 @@ class LocalizedRecurrence(models.Model):
             additional_time = {
                 'DAY': timedelta(days=1),
                 'WEEK': timedelta(weeks=1),
-                'MONTH': relativedelta(months=1)
+                'MONTH': relativedelta(months=1),
+                'QUARTER': relativedelta(months=3),
+                'YEAR': relativedelta(years=1),
             }
             utc_scheduled_time = fleming.add_timedelta(
                 utc_scheduled_time, additional_time[self.interval], within_tz=self.timezone)
@@ -187,6 +191,11 @@ def _replace_with_offset(dt, offset, interval):
         _, last_day = calendar.monthrange(dt.year, dt.month)
         day = (offset.days + 1) if (offset.days + 1) <= last_day else last_day
         dt_out = dt.replace(day=day, hour=hours, minute=minutes, second=seconds)
+    elif interval == 'quarter':
+        dt_out = fleming.floor(dt, month=3).replace(hour=hours, minute=minutes, second=seconds)
+        dt_out += timedelta(offset.days)
+    elif interval == 'year':
+        pass
     else:
         raise ValueError('{i} is not a proper interval value'.format(i=interval))
     return dt_out
