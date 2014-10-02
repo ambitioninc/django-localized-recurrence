@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta
+import calendar
 
 from dateutil.relativedelta import relativedelta
-from django.contrib.contenttypes import generic
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from timezone_field import TimeZoneField
 import fleming
@@ -14,7 +13,9 @@ from .fields import DurationField
 INTERVAL_CHOICES = (
     ('DAY', 'Day'),
     ('WEEK', 'Week'),
-    ('MONTH', 'Month')
+    ('MONTH', 'Month'),
+    ('QUARTER', 'Quarter'),
+    ('YEAR', 'Year'),
 )
 
 
@@ -74,11 +75,17 @@ class LocalizedRecurrence(models.Model):
 
     :type interval: str
     :param interval: The interval at which the event recurs.
-        One of ``'DAY'``, ``'WEEK'``, ``'MONTH'``.
+        One of ``'DAY'``, ``'WEEK'``, ``'MONTH'``, ``'QUARTER'``, ``'YEAR'``.
 
     :type offset: :py:class:`datetime.timedelta`
     :param offset: The amount of time into the interval that the event
         occurs at.
+
+        If the interval is monthly, quarterly, or yearly, the number
+        of days in the interval are variable. In the case of offsets
+        with more days than the number of days in the interval,
+        updating the schedule will not raise an error, but will update
+        to the last day in the interval if necessary.
 
     :type timezone: pytz.timezone
     :param timezone: The local timezone for the user.
@@ -121,71 +128,18 @@ class LocalizedRecurrence(models.Model):
 
     objects = LocalizedRecurrenceManager()
 
-    def check_due(self, objects, time=None):
-        """Return all the objects that are past due.
-
-        This function is used to track a number of objects using a
-        single localized recurrence. An object stored in the database
-        can be tracked.
-
-        :type objects: list of model instances
-        :param objects: This list of objects all recur on the same
-            frequency, but may not have been acted upon yet.
-
-        :type time: :py:class:`datetime.datetime`
-        :param time: Check if the objects are due at this time. If
-            ``None`` defaults to ``datetime.utcnow()``.
-
-        :rtype: list of model instance
-        :returns: The list of objects passed in, filtered such that
-            only those objects that are due (their next scheduled time
-            is before the given ``time``) are included.
-
-        If an object has not been checked before, it will
-        automatically be returned.
-        """
-        time = time or datetime.utcnow()
-        recurrences = self.recurrenceforobject_set.prefetch_related('content_object').all()
-        all_scheduled_objs = set(r.content_object for r in recurrences)
-        past_due = set(r.content_object for r in recurrences.filter(next_scheduled__lt=time))
-
-        due = []
-        for obj in objects:
-            if obj in all_scheduled_objs and obj in past_due:
-                due.append(obj)
-            elif obj not in all_scheduled_objs:
-                due.append(obj)
-                self._sub_recurrence(obj)
-        return due
-
-    def _sub_recurrence(self, for_object):
-        """Return the :class:`.RecurrenceForObject` of the given object.
-        """
-        ct = ContentType.objects.get_for_model(for_object)
-        sub, created = RecurrenceForObject.objects.get_or_create(
-            recurrence=self,
-            content_type=ct,
-            object_id=for_object.id
-        )
-        return sub
-
-    def update_schedule(self, time=None, for_object=None):
+    def update_schedule(self, time=None):
         """Update the schedule for this recurrence or an object it tracks.
 
         :type time: :py:class:`datetime.datetime`
         :param time: The time the schedule was checked. If ``None``,
             defaults to ``datetime.utcnow()``.
 
-        :type for_object: django model instance
-        :param for_object: Optional. Update the schedule for the
-            given object on the recurrence, rather than the the
-            schedule of the recurrence itself.
-
         Calling this function has the side effect that the
         ``next_scheduled`` attribute will be updated to the new time
         in utc.
         """
-        _update_schedule([self], time, for_object)
+        _update_schedule([self], time)
 
     def utc_of_next_schedule(self, current_time):
         """The time in UTC of this instance's next recurrence.
@@ -206,44 +160,23 @@ class LocalizedRecurrence(models.Model):
             additional_time = {
                 'DAY': timedelta(days=1),
                 'WEEK': timedelta(weeks=1),
-                'MONTH': relativedelta(months=1)
+                'MONTH': relativedelta(months=1),
+                'QUARTER': relativedelta(months=3),
+                'YEAR': relativedelta(years=1),
             }
             utc_scheduled_time = fleming.add_timedelta(
                 utc_scheduled_time, additional_time[self.interval], within_tz=self.timezone)
         return utc_scheduled_time
 
 
-class RecurrenceForObject(models.Model):
-    """Updates to a recurrence for different objects.
-    """
-    recurrence = models.ForeignKey('LocalizedRecurrence')
-    content_type = models.ForeignKey(ContentType)
-    object_id = models.PositiveIntegerField()
-    content_object = generic.GenericForeignKey('content_type', 'object_id')
-    previous_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
-    next_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
-
-
-def _update_schedule(recurrences, time=None, for_object=None):
+def _update_schedule(recurrences, time=None):
         """Update the schedule times for all the provided recurrences.
         """
         time = time or datetime.utcnow()
-        if for_object is None:
-            for recurrence in recurrences:
-                recurrence.next_scheduled = recurrence.utc_of_next_schedule(time)
-                recurrence.previous_scheduled = time
-                recurrence.save()
-        else:
-            for recurrence in recurrences:
-                ct = ContentType.objects.get_for_model(for_object)
-                obj, created = RecurrenceForObject.objects.get_or_create(
-                    recurrence=recurrence,
-                    content_type=ct,
-                    object_id=for_object.id
-                )
-                obj.next_scheduled = recurrence.utc_of_next_schedule(time)
-                obj.previous_scheduled = time
-                obj.save()
+        for recurrence in recurrences:
+            recurrence.next_scheduled = recurrence.utc_of_next_schedule(time)
+            recurrence.previous_scheduled = time
+            recurrence.save()
 
 
 def _replace_with_offset(dt, offset, interval):
@@ -261,11 +194,20 @@ def _replace_with_offset(dt, offset, interval):
         dt_out = dt + timedelta(days=offset.days - dt.weekday())
         dt_out = dt_out.replace(hour=hours, minute=minutes, second=seconds)
     elif interval == 'month':
-        # TODO:
-        #     - Modify so it works with the last day of the month
-        #     - As per: http://stackoverflow.com/questions/42950/get-last-day-of-the-month-in-python
-        #     - Add test for: e.g. February 30th.
-        dt_out = dt.replace(day=offset.days + 1, hour=hours, minute=minutes, second=seconds)
+        _, last_day = calendar.monthrange(dt.year, dt.month)
+        day = (offset.days + 1) if (offset.days + 1) <= last_day else last_day
+        dt_out = dt.replace(day=day, hour=hours, minute=minutes, second=seconds)
+    elif interval == 'quarter':
+        month_range = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]][(dt.month - 1) / 3]
+        quarter_days = sum(calendar.monthrange(dt.year, month)[1] for month in month_range)
+        days = offset.days if offset.days <= (quarter_days - 1) else (quarter_days - 1)
+        dt_out = fleming.floor(dt, month=3).replace(hour=hours, minute=minutes, second=seconds)
+        dt_out += timedelta(days)
+    elif interval == 'year':
+        leap_year_extra_days = 1 if calendar.isleap(dt.year) else 0
+        days = offset.days if offset.days <= 364 + leap_year_extra_days else 364 + leap_year_extra_days
+        dt_out = fleming.floor(dt, year=1).replace(hour=hours, minute=minutes, second=seconds)
+        dt_out += timedelta(days)
     else:
         raise ValueError('{i} is not a proper interval value'.format(i=interval))
     return dt_out

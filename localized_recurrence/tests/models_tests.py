@@ -1,24 +1,18 @@
 from datetime import datetime, timedelta
 
-from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase
+from django_dynamic_fixture import G
 import pytz
 
-from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet, RecurrenceForObject
+from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet
 from ..models import _replace_with_offset, _update_schedule
 
 
 class LocalizedRecurrenceQuerySetTest(TestCase):
     """Simple test to ensure the custom query set is being used.
     """
-    def setUp(self):
-        self.lr_day = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-
     def test_isinstance(self):
+        G(LocalizedRecurrence)
         recurrences = LocalizedRecurrence.objects.all()
         self.assertIsInstance(recurrences, LocalizedRecurrenceQuerySet)
 
@@ -27,16 +21,8 @@ class LocalizedRecurrenceQuerySetUpdateScheduleTest(TestCase):
     """Test that updates to recurrences are reflected in the DB.
     """
     def setUp(self):
-        self.lr_day = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-        self.lr_month = LocalizedRecurrence.objects.create(
-            interval='MONTH',
-            offset=timedelta(hours=15),
-            timezone=pytz.timezone('US/Eastern'),
-        )
+        G(LocalizedRecurrence, interval='DAY', offset=timedelta(hours=12), timezone=pytz.timezone('US/Eastern'))
+        G(LocalizedRecurrence, interval='MONTH', offset=timedelta(hours=15), timezone=pytz.timezone('US/Eastern'))
 
     def test_update_from_1970(self):
         """Start with next_scheduled of 1970, after update should be new.
@@ -49,16 +35,8 @@ class LocalizedRecurrenceQuerySetUpdateScheduleTest(TestCase):
 
 class LocalizedRecurrenceManagerUpdateScheduleTest(TestCase):
     def setUp(self):
-        self.lr_day = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-        self.lr_month = LocalizedRecurrence.objects.create(
-            interval='MONTH',
-            offset=timedelta(hours=15),
-            timezone=pytz.timezone('US/Eastern'),
-        )
+        G(LocalizedRecurrence, interval='DAY', offset=timedelta(hours=12), timezone=pytz.timezone('US/Eastern'))
+        G(LocalizedRecurrence, interval='MONTH', offset=timedelta(hours=15), timezone=pytz.timezone('US/Eastern'))
 
     def test_update_all(self):
         """Calls to the model manager to update should be passed through.
@@ -72,19 +50,7 @@ class LocalizedRecurrenceTest(TestCase):
     """Test the creation and querying of LocalizedRecurrence records.
     """
     def setUp(self):
-        self.lr = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-
-    def test_creation_works(self):
-        """Create a single record and get it back in a queryset.
-
-        The record is created in setUp, we just test the return here.
-        """
-        lr_count = LocalizedRecurrence.objects.all().count()
-        self.assertEqual(lr_count, 1)
+        G(LocalizedRecurrence, interval='DAY', offset=timedelta(hours=12), timezone=pytz.timezone('US/Eastern'))
 
     def test_timedelta_returned(self):
         """Test that the Duration field is correctly returning timedeltas.
@@ -93,155 +59,39 @@ class LocalizedRecurrenceTest(TestCase):
         self.assertTrue(isinstance(lr.offset, timedelta))
 
 
-class LocalizedRecurrenceCheckDueTest(TestCase):
-    def setUp(self):
-        self.lr = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(0),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-        self.lr2 = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(0),
-            timezone=pytz.timezone('US/Central'),
-        )
-
-    def test_creates(self):
-        # We use self.lr as the object purely for convenience, not
-        # because it is a sensible choice.
-        due = self.lr.check_due([self.lr])
-        self.assertEqual(len(due), 1)
-        self.assertEqual(RecurrenceForObject.objects.count(), 1)
-
-    def test_returns_due(self):
-        # Again, use self.lr & self.lr2 as objects purely for
-        # convenience.
-        self.lr._sub_recurrence(self.lr)
-        self.lr._sub_recurrence(self.lr2)
-        self.lr.update_schedule(for_object=self.lr2)
-        due = self.lr.check_due([self.lr, self.lr2])
-        self.assertIn(self.lr, due)
-
-    def test_filters_not_due(self):
-        # Again, use self.lr & self.lr2 as objects purely for
-        # convenience.
-        self.lr._sub_recurrence(self.lr)
-        self.lr._sub_recurrence(self.lr2)
-        self.lr.update_schedule(for_object=self.lr2)
-        due = self.lr.check_due([self.lr, self.lr2])
-        self.assertNotIn(self.lr2, due)
-
-    def test_num_queries_constant_in_records(self):
-        # Again, use self.lr & self.lr2 as objects purely for
-        # convenience.
-        kwargs = {'interval': 'DAY', 'offset': timedelta(0), 'timezone': pytz.timezone('US/Eastern')}
-        lr3 = LocalizedRecurrence.objects.create(**kwargs)
-        lr4 = LocalizedRecurrence.objects.create(**kwargs)
-        self.lr._sub_recurrence(self.lr)
-        self.lr._sub_recurrence(self.lr2)
-        self.lr._sub_recurrence(lr3)
-        self.lr._sub_recurrence(lr4)
-        self.lr.update_schedule(for_object=self.lr2)
-        # Even if we have a ton of objects tracked, if they're all of
-        # the same content-type, there should be exactly _four_
-        # queries.
-        with self.assertNumQueries(4):
-            self.lr.check_due([self.lr, self.lr2, lr3, lr4])
-
-    def test_num_queries(self):
-        """Stress test number of queries with different contenttypes.
-
-        The check_due method should avoid hitting the database as much
-        as possible. Here we check the performance characteristics
-        with multiple content types.
-
-        We expect the number of queries to expand linearly with the
-        number of different content types in the sub-recurrences
-        because of how prefetch_related works, but the number of
-        queries should not increase in the number of tracked objects.
-        """
-        # Here, to get different content-types, we use both localized
-        # recurrence instances and RecurrenceForObject instances. This
-        # is an ugly hack, but they're the only content types we have
-        # available.
-        kwargs = {'interval': 'DAY', 'offset': timedelta(0), 'timezone': pytz.timezone('US/Eastern')}
-        lr3 = LocalizedRecurrence.objects.create(**kwargs)
-        lr4 = LocalizedRecurrence.objects.create(**kwargs)
-        self.lr._sub_recurrence(self.lr)
-        self.lr._sub_recurrence(self.lr2)
-        self.lr._sub_recurrence(lr3)
-        self.lr._sub_recurrence(lr4)
-        rfos = RecurrenceForObject.objects.all()[:4]
-        for rfo in rfos:
-            self.lr._sub_recurrence(rfo)
-        self.lr.update_schedule(for_object=self.lr2)
-        self.lr.update_schedule(for_object=rfos[0])
-        with self.assertNumQueries(6):
-            self.lr.check_due([self.lr, self.lr2, rfos[0], rfos[1]])
-
-
-class LocalizedRecurrenceSubRecurrenceTest(TestCase):
-    def setUp(self):
-        self.lr = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(0),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-
-    def test_creates(self):
-        self.lr._sub_recurrence(for_object=self.lr)
-        self.assertEqual(RecurrenceForObject.objects.count(), 1)
-
-    def test_gets(self):
-        self.lr._sub_recurrence(for_object=self.lr)
-        obj = self.lr._sub_recurrence(for_object=self.lr)
-        from pprint import pprint
-        pprint([r.__dict__ for r in RecurrenceForObject.objects.all()])
-        self.assertEqual(RecurrenceForObject.objects.count(), 1)
-        self.assertEqual(obj.content_object, self.lr)
-
-
 class LocalizedRecurrenceUpdateScheduleTest(TestCase):
     def setUp(self):
-        self.lr_day = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
+        self.lr_day = G(LocalizedRecurrence,
+                        interval='DAY', offset=timedelta(hours=12), timezone=pytz.timezone('US/Eastern'))
 
     def test_update_passes_through(self):
         time = datetime(year=2013, month=5, day=20, hour=15, minute=3)
         self.lr_day.update_schedule(time)
         self.assertGreater(self.lr_day.next_scheduled, time)
 
-    def test_update_passes_through_for_obj(self):
-        time = datetime(year=2013, month=5, day=20, hour=15, minute=3)
-        self.lr_day.update_schedule(time, self.lr_day)
-        ct = ContentType.objects.get_for_model(self.lr_day)
-        individual_recurrence = self.lr_day.recurrenceforobject_set.get(
-            object_id=self.lr_day.id, content_type=ct)
-        self.assertGreater(individual_recurrence.next_scheduled, time)
-
 
 class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
     def setUp(self):
-        self.lr_day = LocalizedRecurrence.objects.create(
-            interval='DAY',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-
-        self.lr_week = LocalizedRecurrence.objects.create(
-            interval='WEEK',
-            offset=timedelta(days=3, hours=17, minutes=30),
-            timezone=pytz.timezone('US/Central')
-        )
-
-        self.lr_month = LocalizedRecurrence.objects.create(
-            interval='MONTH',
-            offset=timedelta(days=21, hours=19, minutes=15, seconds=10),
-            timezone=pytz.timezone('US/Central')
-        )
+        self.lr_day = G(
+            LocalizedRecurrence,
+            interval='DAY', offset=timedelta(hours=12),
+            timezone=pytz.timezone('US/Eastern'))
+        self.lr_week = G(
+            LocalizedRecurrence,
+            interval='WEEK', offset=timedelta(days=3, hours=17, minutes=30),
+            timezone=pytz.timezone('US/Central'))
+        self.lr_month = G(
+            LocalizedRecurrence,
+            interval='MONTH', offset=timedelta(days=21, hours=19, minutes=15, seconds=10),
+            timezone=pytz.timezone('US/Central'))
+        self.lr_quarter = G(
+            LocalizedRecurrence,
+            interval='QUARTER', offset=timedelta(days=68, hours=16, minutes=30),
+            timezone=pytz.timezone('Asia/Hong_Kong'))
+        self.lr_year = G(
+            LocalizedRecurrence,
+            interval='YEAR', offset=timedelta(days=31, hours=16, minutes=30),
+            timezone=pytz.timezone('Asia/Hong_Kong'))
 
     def test_basic_works(self):
         """Test a simple case of utc_of_next_schedule.
@@ -307,6 +157,30 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         schedule_out = self.lr_month.utc_of_next_schedule(current_time)
         self.assertEqual(schedule_out, expected_next_schedule)
 
+    def test_quarterly(self):
+        """Quarterly Recurrences should work as expected.
+
+        - June 23rd at 12:34 AM UTC is June 22nd at 10:34 PM HKT.
+        - Scheduled for Quarterly, on the 68th day at 4:30 PM HKT
+        - Expect next schedule to be September 8th at 8:30 AM UTC
+        """
+        current_time = datetime(2013, 6, 23, 0, 34, 55)
+        expected_next_schedule = datetime(2013, 9, 8, 8, 30)
+        schedule_out = self.lr_quarter.utc_of_next_schedule(current_time)
+        self.assertEqual(schedule_out, expected_next_schedule)
+
+    def test_yearly(self):
+        """Yearly Recurrences should work as expected.
+
+        - June 23rd at 12:34 AM UTC is June 22nd at 10:34 PM HKT.
+        - Scheduled for Yearly, on the 31st day at 4:30 PM HKT
+        - Expect next schedule to be February 1st at 8:30 AM UTC
+        """
+        current_time = datetime(2013, 6, 23, 0, 34, 55)
+        expected_next_schedule = datetime(2014, 2, 1, 8, 30)
+        schedule_out = self.lr_year.utc_of_next_schedule(current_time)
+        self.assertEqual(schedule_out, expected_next_schedule)
+
     def test_into_dst_boundary(self):
         """Recurrences happen at the correct local time after going into DST.
 
@@ -354,32 +228,21 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
 
 class UpdateScheduleTest(TestCase):
     def setUp(self):
-        self.lr_week = LocalizedRecurrence.objects.create(
-            interval='WEEK',
-            offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
-        self.lr_week = LocalizedRecurrence.objects.create(
+        self.lr_week = G(
+            LocalizedRecurrence,
+            interval='WEEK', offset=timedelta(hours=12),
+            timezone=pytz.timezone('US/Eastern'))
+        self.lr_day = G(
+            LocalizedRecurrence,
             interval='DAY',
             offset=timedelta(hours=12),
-            timezone=pytz.timezone('US/Eastern'),
-        )
+            timezone=pytz.timezone('US/Eastern'))
 
     def test_updates_localized_recurrences(self):
         time = datetime(year=2013, month=5, day=20, hour=12, minute=3)
         _update_schedule([self.lr_week], time)
         self.assertGreater(self.lr_week.next_scheduled, time)
         self.assertEqual(self.lr_week.previous_scheduled, time)
-
-    def test_updates_recurrence_for_objects(self):
-        time = datetime(year=2013, month=5, day=20, hour=12, minute=3)
-        _update_schedule([self.lr_week], time, for_object=self.lr_week)
-        obj_recurrence = self.lr_week.recurrenceforobject_set.get(
-            object_id=self.lr_week.id,
-            content_type=ContentType.objects.get_for_model(self.lr_week)
-        )
-        self.assertGreater(obj_recurrence.next_scheduled, time)
-        self.assertEqual(obj_recurrence.previous_scheduled, time)
 
 
 class ReplaceWithOffsetTest(TestCase):
@@ -423,6 +286,70 @@ class ReplaceWithOffsetTest(TestCase):
         dt_expected = datetime(2013, 1, 16, 3, 3, 3)
         dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_out, dt_expected)
+
+    def test_last_day_of_month(self):
+        dt_in = datetime(2013, 2, 20, 12, 45, 48)
+        td_in = timedelta(days=31, hours=3, minutes=3, seconds=3)
+        interval_in = 'MONTH'
+        dt_expected = datetime(2013, 2, 28, 3, 3, 3)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_out, dt_expected)
+
+    def test_quarter(self):
+        dt_in = datetime(2013, 4, 20, 12, 45, 48)
+        td_in = timedelta(days=65, hours=3, minutes=3, seconds=3)
+        interval_in = 'QUARTER'
+        dt_expected = datetime(2013, 6, 5, 3, 3, 3)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_out, dt_expected)
+
+    def test_quarterly_past(self):
+        dt_in = datetime(2013, 6, 23, 0, 34, 55)
+        td_in = timedelta(days=68, hours=16, minutes=30)
+        interval_in = 'QUARTER'
+        dt_expected = datetime(2013, 6, 8, 16, 30)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_expected, dt_out)
+
+    def test_quarterly_overshoot(self):
+        dt_in = datetime(2013, 1, 1, 0)
+        td_in = timedelta(days=90, hours=12)
+        interval_in = 'QUARTER'
+        dt_expected = datetime(2013, 3, 31, 12)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_expected, dt_out)
+
+    def test_quarterly_undershoot(self):
+        dt_in = datetime(2013, 7, 1, 0)
+        td_in = timedelta(days=90, hours=12)
+        interval_in = 'QUARTER'
+        dt_expected = datetime(2013, 9, 29, 12)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_expected, dt_out)
+
+    def test_year(self):
+        dt_in = datetime(2013, 6, 23, 0, 34, 55)
+        td_in = timedelta(days=5, hours=16, minutes=30)
+        interval_in = 'YEAR'
+        dt_expected = datetime(2013, 1, 6, 16, 30)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_expected, dt_out)
+
+    def test_year_end_leap_year(self):
+        dt_in = datetime(2016, 6, 23, 0, 34, 55)
+        td_in = timedelta(days=365, hours=16, minutes=30)
+        interval_in = 'YEAR'
+        dt_expected = datetime(2016, 12, 31, 16, 30)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_expected, dt_out)
+
+    def test_year_end_non_leap_year(self):
+        dt_in = datetime(2015, 6, 23, 0, 34, 55)
+        td_in = timedelta(days=365, hours=16, minutes=30)
+        interval_in = 'YEAR'
+        dt_expected = datetime(2015, 12, 31, 16, 30)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_expected, dt_out)
 
     def test_bad_interval(self):
         """A missformed interval should raise a value error

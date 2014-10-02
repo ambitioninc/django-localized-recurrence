@@ -47,6 +47,7 @@ setup(
     ],
     tests_require=[
         'django-nose',
+        'django-dynamic-fixture',
         'mock',
         'south'
     ],
