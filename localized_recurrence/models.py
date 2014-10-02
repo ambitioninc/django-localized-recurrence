@@ -195,7 +195,8 @@ def _replace_with_offset(dt, offset, interval):
         dt_out = fleming.floor(dt, month=3).replace(hour=hours, minute=minutes, second=seconds)
         dt_out += timedelta(offset.days)
     elif interval == 'year':
-        pass
+        dt_out = fleming.floor(dt, year=1).replace(hour=hours, minute=minutes, second=seconds)
+        dt_out += timedelta(offset.days)
     else:
         raise ValueError('{i} is not a proper interval value'.format(i=interval))
     return dt_out

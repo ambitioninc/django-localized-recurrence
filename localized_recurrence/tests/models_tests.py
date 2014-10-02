@@ -88,6 +88,10 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
             LocalizedRecurrence,
             interval='QUARTER', offset=timedelta(days=68, hours=16, minutes=30),
             timezone=pytz.timezone('Asia/Hong_Kong'))
+        self.lr_year = G(
+            LocalizedRecurrence,
+            interval='YEAR', offset=timedelta(days=31, hours=16, minutes=30),
+            timezone=pytz.timezone('Asia/Hong_Kong'))
 
     def test_basic_works(self):
         """Test a simple case of utc_of_next_schedule.
@@ -154,7 +158,7 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_quarterly(self):
-        """Monthly Recurrences should work as expected.
+        """Quarterly Recurrences should work as expected.
 
         - June 23rd at 12:34 AM UTC is June 22nd at 10:34 PM HKT.
         - Scheduled for Quarterly, on the 68th day at 4:30 PM HKT
@@ -163,6 +167,18 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         current_time = datetime(2013, 6, 23, 0, 34, 55)
         expected_next_schedule = datetime(2013, 9, 8, 8, 30)
         schedule_out = self.lr_quarter.utc_of_next_schedule(current_time)
+        self.assertEqual(schedule_out, expected_next_schedule)
+
+    def test_yearly(self):
+        """Yearly Recurrences should work as expected.
+
+        - June 23rd at 12:34 AM UTC is June 22nd at 10:34 PM HKT.
+        - Scheduled for Yearly, on the 31st day at 4:30 PM HKT
+        - Expect next schedule to be February 1st at 8:30 AM UTC
+        """
+        current_time = datetime(2013, 6, 23, 0, 34, 55)
+        expected_next_schedule = datetime(2014, 2, 1, 8, 30)
+        schedule_out = self.lr_year.utc_of_next_schedule(current_time)
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_into_dst_boundary(self):
@@ -292,6 +308,14 @@ class ReplaceWithOffsetTest(TestCase):
         td_in = timedelta(days=68, hours=16, minutes=30)
         interval_in = 'QUARTER'
         dt_expected = datetime(2013, 6, 8, 16, 30)
+        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        self.assertEqual(dt_expected, dt_out)
+
+    def test_year(self):
+        dt_in = datetime(2013, 6, 23, 0, 34, 55)
+        td_in = timedelta(days=5, hours=16, minutes=30)
+        interval_in = 'YEAR'
+        dt_expected = datetime(2013, 1, 6, 16, 30)
         dt_out = _replace_with_offset(dt_in, td_in, interval_in)
         self.assertEqual(dt_expected, dt_out)
 
