@@ -154,7 +154,8 @@ class LocalizedRecurrence(models.Model):
         can be called without side-effect.
         """
         local_time = fleming.convert_to_tz(current_time, self.timezone)
-        local_scheduled_time = _replace_with_offset(local_time, self.offset, self.interval)
+        local_scheduled_time = fleming.fleming.dst_normalize(
+            _replace_with_offset(local_time, self.offset, self.interval))
         utc_scheduled_time = fleming.convert_to_tz(local_scheduled_time, pytz.utc, return_naive=True)
         if utc_scheduled_time <= current_time:
             additional_time = {
@@ -166,6 +167,7 @@ class LocalizedRecurrence(models.Model):
             }
             utc_scheduled_time = fleming.add_timedelta(
                 utc_scheduled_time, additional_time[self.interval], within_tz=self.timezone)
+
         return utc_scheduled_time
 
 
