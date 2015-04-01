@@ -105,6 +105,13 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         schedule_out = self.lr_day.utc_of_next_schedule(current_time)
         self.assertEqual(schedule_out, expected_next_schedule)
 
+    def test_dst_cross_monthly(self):
+        """The case when a monthly recurrence goes past daylight savings time"""
+        self.lr_month.offset = timedelta(hours=0)
+        self.lr_month.previous_scheduled = datetime(2015, 2, 1, 6)
+        scheduled_out = self.lr_month.utc_of_next_schedule(datetime(2015, 3, 31))
+        self.assertEqual(scheduled_out, datetime(2015, 4, 1, 5))
+
     def test_before_midnight(self):
         """The case when the scheduled and current time cross midnight.
 
