@@ -200,7 +200,7 @@ def _replace_with_offset(dt, offset, interval):
         day = (offset.days + 1) if (offset.days + 1) <= last_day else last_day
         dt_out = dt.replace(day=day, hour=hours, minute=minutes, second=seconds)
     elif interval == 'quarter':
-        month_range = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]][(dt.month - 1) / 3]
+        month_range = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]][int((dt.month - 1) / 3)]
         quarter_days = sum(calendar.monthrange(dt.year, month)[1] for month in month_range)
         days = offset.days if offset.days <= (quarter_days - 1) else (quarter_days - 1)
         dt_out = fleming.floor(dt, month=3).replace(hour=hours, minute=minutes, second=seconds)

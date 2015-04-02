@@ -136,7 +136,7 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         self.lr_day.offset = timedelta(minutes=1)
         self.lr_day.save()
         current_time = datetime(2013, 1, 15, 5, 5, 22)
-        expected_next_schedule = datetime(2013, 1, 16, 5, 01)
+        expected_next_schedule = datetime(2013, 1, 16, 5, 1)
         schedule_out = self.lr_day.utc_of_next_schedule(current_time)
         self.assertEqual(schedule_out, expected_next_schedule)
 

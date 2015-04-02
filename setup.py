@@ -30,18 +30,21 @@ setup(
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
+        'Framework :: Django :: 1.6',
+        'Framework :: Django :: 1.7',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.4',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
     install_requires=[
-        'django',
+        'Django>=1.6',
         'django-timezone-field',
-        'fleming',
+        'fleming>=0.4.3',
         'python-dateutil',
         'pytz',
     ],
@@ -49,7 +52,7 @@ setup(
         'django-nose',
         'django-dynamic-fixture',
         'mock',
-        'south'
+        'south>=1.0.2'
     ],
     test_suite='run_tests.run_tests'
 )
