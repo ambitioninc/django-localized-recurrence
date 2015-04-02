@@ -1,6 +1,5 @@
 Contributing
 ============
-
 Contributions and issues are most welcome! All issues and pull requests are
 handled through github on the `ambitioninc repository`_. Also, please check for
 any existing issues before filing a new one. If you have a great idea but it
@@ -12,7 +11,6 @@ the scope of the project.
 
 Running the tests
 -----------------
-
 To get the source source code and run the unit tests, run::
 
     $ git clone git://github.com/ambitioninc/django-localized-recurrence.git
@@ -29,7 +27,6 @@ before submitting a pull request.
 
 Code Quality
 ------------
-
 For code quality, and style consistency please run flake8::
 
     $ pip install flake8
@@ -60,28 +57,27 @@ Please follow `Google's python style`_ guide wherever possible.
 
 Building the docs
 -----------------
-
 When in the project directory::
 
     $ pip install -r requirements/docs.txt
-    $ pip uninstall -y localized_recurrence && python setup.py install
-    $ cd docs && make html
-    $ open docs/_build/html/index.html
+    $ python setup.py build_sphinx
+    $ open docs/build/html/index.html
 
 Release Checklist
 -----------------
-
 To create a new release, please go through each step of the following
 checklist:
 
 * Bump version in localized_recurrence/version.py
 * Git tag the version
-* Add a release note in docs/release_notes.rst
-* Upload to pypi
+* Upload to pypi::
+
+    pip install wheel
+    python setup.py sdist bdist_wheel upload
+
 
 Vulnerability Reporting
 -----------------------
-
 For any security issues, please do NOT file an issue or pull request on github!
 Please contact `security@ambition.com`_ with the GPG key provided on `Ambition's
 website`_.

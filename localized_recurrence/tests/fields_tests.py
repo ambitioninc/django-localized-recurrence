@@ -1,6 +1,11 @@
 import unittest
 from datetime import timedelta
 
+import django
+import six
+if six.PY3:  # pragma: no cover
+    from importlib import reload
+
 from mock import MagicMock, patch
 
 from .. import fields
@@ -11,6 +16,38 @@ class DurationFieldToPythonTest(unittest.TestCase):
         """Create a mock of the DurationField class and pin to_python to it.
         """
         self.df = fields.DurationField()
+        self.df_with_default = fields.DurationField(default=60)
+
+    def test_deconstruct_with_default(self):
+        """
+        Test .deconstruct() with a default
+        """
+        if django.VERSION[1] >= 7:  # pragma: no cover
+            name, path, args, kwargs = self.df_with_default.deconstruct()
+
+            self.assertEqual(kwargs['default'], 60)
+        else:  # pragma: no cover
+            with patch('localized_recurrence.fields.IntegerField.deconstruct', create=True) as mock_deconstruct:
+                mock_deconstruct.return_value = (
+                    'duration', 'django.db.models.IntegerField', [], {'default': timedelta(seconds=60)}
+                )
+                name, path, args, kwargs = self.df_with_default.deconstruct()
+                self.assertEqual(kwargs['default'], 60)
+
+    def test_deconstruct_without_default(self):
+        """
+        Test .deconstruct() without a default
+        """
+        if django.VERSION[1] >= 7:  # pragma: no cover
+            name, path, args, kwargs = self.df.deconstruct()
+            self.assertFalse('default' in kwargs.keys())
+        else:  # pragma: no cover
+            with patch('localized_recurrence.fields.IntegerField.deconstruct', create=True) as mock_deconstruct:
+                mock_deconstruct.return_value = (
+                    'duration', 'django.db.models.IntegerField', [], {}
+                )
+                name, path, args, kwargs = self.df_with_default.deconstruct()
+                self.assertNotIn('default', kwargs.keys())
 
     def test_timedelta(self):
         """A timedelta should just get returned.

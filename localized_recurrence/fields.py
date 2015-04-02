@@ -3,9 +3,11 @@ import re
 
 from django.db.models import SubfieldBase
 from django.db.models.fields import IntegerField
+import six
+from six import with_metaclass
 
 
-class DurationField(IntegerField):
+class DurationField(with_metaclass(SubfieldBase, IntegerField)):
     """A field to store durations of time with accuracy to the second.
 
     A Duration Field will automatically convert between python
@@ -36,7 +38,6 @@ class DurationField(IntegerField):
 
     """
     description = "A duration of time."
-    __metaclass__ = SubfieldBase
 
     def __init__(self, *args, **kwargs):
         """Call out to the super. Makes docs cleaner."""
@@ -52,7 +53,7 @@ class DurationField(IntegerField):
         """
         if isinstance(value, timedelta):
             v = value
-        elif isinstance(value, (str, unicode)):
+        elif isinstance(value, (six.binary_type, six.text_type)):
             # The string should be in the form "[D day[s],][H]H:MM:SS[.UUUUUU]"
             try:
                 v = parse_timedelta_string(value)
@@ -66,10 +67,15 @@ class DurationField(IntegerField):
             raise ValueError("Not a valid Duration object")
         return v
 
+    def deconstruct(self):
+        name, path, args, kwargs = super(DurationField, self).deconstruct()
+        if 'default' in kwargs.keys():
+            kwargs['default'] = self.get_prep_value(kwargs['default'])
+        return name, 'localized_recurrence.fields.DurationField', args, kwargs
+
     def get_prep_value(self, value):
         """Convert a timedelta to integer for storage.
         """
-        # import pdb; pdb.set_trace()
         value = self.to_python(value)
         return int(value.total_seconds())
 
@@ -77,7 +83,7 @@ class DurationField(IntegerField):
         """Used by serializers to get a string representation.
         """
         time_delta_value = self._get_val_from_obj(obj)
-        return time_delta_value.__str__()
+        return str(time_delta_value)
 
 
 def parse_timedelta_string(string):
