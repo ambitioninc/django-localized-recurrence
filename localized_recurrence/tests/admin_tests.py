@@ -16,11 +16,11 @@ class LocalizedRecurrenceAdminTest(TestCase):
         lr_admin = LocalizedRecurrenceAdmin(LocalizedRecurrence, self.site)
         self.assertEqual(
             lr_admin.list_display,
-            (
+            [
                 'id',
                 'interval',
                 'timezone',
                 'previous_scheduled',
                 'next_scheduled'
-            )
+            ]
         )
