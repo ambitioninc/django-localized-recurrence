@@ -1,5 +1,8 @@
+from django.test import TestCase
+
 from localized_recurrence.admin import LocalizedRecurrenceAdmin
 
 
-def test_admin(self):
-    LocalizedRecurrenceAdmin()
+class LocalizedRecurrenceAdminTests(TestCase):
+    def test_admin():
+        LocalizedRecurrenceAdmin()
