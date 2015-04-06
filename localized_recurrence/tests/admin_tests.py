@@ -1,10 +1,13 @@
+from django.contrib.admin.options import ModelAdmin
+from django.contrib.admin.sites import AdminSite
 from django.test import TestCase
 
-from localized_recurrence.admin import LocalizedRecurrenceAdmin
+from localized_recurrence.models import LocalizedRecurrence
 
 
 class LocalizedRecurrenceAdminTest(TestCase):
     """Verify that the admin can load.
     """
     def test_admin(self):
-        LocalizedRecurrenceAdmin()
+        site = AdminSite()
+        ModelAdmin(LocalizedRecurrence, site)
