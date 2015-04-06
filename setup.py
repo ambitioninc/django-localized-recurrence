@@ -42,7 +42,7 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
     install_requires=[
-        'Django>=1.6,<=1.8',
+        'Django>=1.6,<1.8',
         'django-timezone-field',
         'fleming>=0.4.3',
         'python-dateutil',
