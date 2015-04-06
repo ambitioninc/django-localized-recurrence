@@ -3,6 +3,7 @@ import calendar
 
 from dateutil.relativedelta import relativedelta
 from django.db import models
+from django.utils.encoding import python_2_unicode_compatible
 from timezone_field import TimeZoneField
 import fleming
 import pytz
@@ -69,6 +70,7 @@ class LocalizedRecurrenceManager(models.Manager):
         self.get_queryset().update_schedule(time=time)
 
 
+@python_2_unicode_compatible
 class LocalizedRecurrence(models.Model):
     """The information necessary to act on events in users local
     times. Can be instantiated with ``LocalizedRecurrence.objects.create``
@@ -127,6 +129,9 @@ class LocalizedRecurrence(models.Model):
     next_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
 
     objects = LocalizedRecurrenceManager()
+
+    def __str__(self):
+        return 'ID: {0}, Interval: {1}, Next Scheduled: {2}'.format(self.id, self.interval, self.next_scheduled)
 
     def update_schedule(self, time=None):
         """Update the schedule for this recurrence or an object it tracks.
