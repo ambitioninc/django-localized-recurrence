@@ -58,6 +58,13 @@ class LocalizedRecurrenceTest(TestCase):
         lr = LocalizedRecurrence.objects.first()
         self.assertTrue(isinstance(lr.offset, timedelta))
 
+    def test_string_representation(self):
+        lr = LocalizedRecurrence.objects.first()
+        self.assertEqual(
+            str(lr),
+            'ID: {0}, Interval: {1}, Next Scheduled: {2}'.format(lr.id, lr.interval, lr.next_scheduled),
+        )
+
 
 class LocalizedRecurrenceUpdateScheduleTest(TestCase):
     def setUp(self):
