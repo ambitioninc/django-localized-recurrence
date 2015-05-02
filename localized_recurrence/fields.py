@@ -105,4 +105,3 @@ def parse_timedelta_string(string):
         return timedelta(**{k: float(v) for k, v in match_no_days.groupdict().items()})
     else:
         raise ValueError("'%s' is not in the form [D day[s],][H]H:MM:SS[.UUUUUU]" % string)
-
