@@ -42,17 +42,16 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
     install_requires=[
-        'Django>=1.6',
+        'Django>=1.7',
         'django-timezone-field',
         'fleming>=0.4.3',
         'python-dateutil',
         'pytz',
     ],
     tests_require=[
-        'django-nose',
+        'django-nose>=1.4',
         'django-dynamic-fixture',
         'mock',
-        'south>=1.0.2'
     ],
     test_suite='run_tests.run_tests'
 )
