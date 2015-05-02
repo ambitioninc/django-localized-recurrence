@@ -2,9 +2,7 @@
 branch = True
 omit =
     */migrations/*
-    */south_migrations/*
     localized_recurrence/version.py
-    localized_recurrence/apps.py
 source = localized_recurrence
 [report]
 exclude_lines =
