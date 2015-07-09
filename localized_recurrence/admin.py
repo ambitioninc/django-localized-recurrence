@@ -8,9 +8,11 @@ class LocalizedRecurrenceAdmin(ModelAdmin):
         'id',
         'interval',
         'timezone',
+        'offset',
         'previous_scheduled',
         'next_scheduled',
     ]
+    exclude = ['offset']
 
 
 site.register(LocalizedRecurrence, LocalizedRecurrenceAdmin)
