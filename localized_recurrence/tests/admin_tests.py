@@ -20,6 +20,7 @@ class LocalizedRecurrenceAdminTest(TestCase):
                 'id',
                 'interval',
                 'timezone',
+                'offset',
                 'previous_scheduled',
                 'next_scheduled'
             ]

@@ -8,6 +8,28 @@ from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet
 from ..models import _replace_with_offset, _update_schedule
 
 
+class LocalizedRecurrenceUpdateTest(TestCase):
+    """
+    Tests calling 'update' on a localized recurrence.
+    """
+    def test_update_creation(self):
+        lr = LocalizedRecurrence()
+        lr.update()
+        self.assertIsNotNone(lr.id)
+
+    def test_update_timezone(self):
+        lr = G(LocalizedRecurrence)
+        lr.update(timezone='US/Eastern')
+        lr = LocalizedRecurrence.objects.get(id=lr.id)
+        self.assertEqual(lr.timezone, pytz.timezone('US/Eastern'))
+
+    def test_update_offset(self):
+        lr = G(LocalizedRecurrence)
+        lr.update(offset=1)
+        lr = LocalizedRecurrence.objects.get(id=lr.id)
+        self.assertEqual(lr.offset, timedelta(seconds=1))
+
+
 class LocalizedRecurrenceQuerySetTest(TestCase):
     """Simple test to ensure the custom query set is being used.
     """
