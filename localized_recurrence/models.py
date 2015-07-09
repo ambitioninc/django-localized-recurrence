@@ -133,6 +133,13 @@ class LocalizedRecurrence(models.Model):
     def __str__(self):
         return 'ID: {0}, Interval: {1}, Next Scheduled: {2}'.format(self.id, self.interval, self.next_scheduled)
 
+    def update(self, **updates):
+        """Updates fields in the localized recurrence."""
+        for update in updates:
+            setattr(self, update, updates[update])
+
+        return self.save()
+
     def update_schedule(self, time=None):
         """Update the schedule for this recurrence or an object it tracks.
 
