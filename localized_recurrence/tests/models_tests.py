@@ -219,6 +219,18 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         schedule_out = self.lr_month.utc_of_next_schedule(current_time)
         self.assertEqual(schedule_out, expected_next_schedule)
 
+    def test_month_year_end_update(self):
+        """Monthly Recurrences should transition over years correctly
+
+        - Monday December 23 at 2:34 AM UTC is Sunday August 22nd at 9:34 PM CDT.
+        - Scheduled for Monthly, on the 21st day at 7:15.10 PM CDT
+        - Expect next schedule to be January 23 at 1:15.10 AM UCT
+        """
+        current_time = datetime(2013, 12, 23, 2, 34, 55)
+        expected_next_schedule = datetime(2014, 1, 23, 1, 15, 10)
+        schedule_out = self.lr_month.utc_of_next_schedule(current_time)
+        self.assertEqual(schedule_out, expected_next_schedule)
+
     def test_quarterly(self):
         """Quarterly Recurrences should work as expected.
 
