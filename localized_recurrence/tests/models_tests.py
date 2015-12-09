@@ -169,27 +169,53 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         schedule_out = self.lr_day.utc_of_next_schedule(current_time)
         self.assertEqual(schedule_out, expected_next_schedule)
 
-    def test_week_update(self):
-        """Weekly Recurrences should work as expected.
+    def test_week_update_full_week(self):
+        """Weekly Recurrences should be able to add a full week.
 
-        - Friday August 8th at 10:34 PM UTC is 5:34 PM CDT.
-        - Scheduled for weekly, Friday at 5:30
-        - Expect next schedule to be Friday August 15th at 10:30 PM UTC
+        - Thursday August 8th at 10:34 PM UTC is 5:34 PM CDT.
+        - Scheduled for weekly, Thursday at 5:30
+        - Expect next schedule to be Thursday August 15th at 10:30 PM UTC
         """
         current_time = datetime(2013, 8, 8, 22, 34)
         expected_next_schedule = datetime(2013, 8, 15, 22, 30)
         schedule_out = self.lr_week.utc_of_next_schedule(current_time)
         self.assertEqual(schedule_out, expected_next_schedule)
 
-    def test_month_update(self):
-        """Monthly Recurrences should work as expected.
+    def test_weekly_update_current_week(self):
+        """Weekly Recurrences should be able to work in the current week.
 
-        - Friday August 23rd at 12:34 AM UTC is Friday August 22nd at 7:34 PM CDT.
-        - Scheduled for Monthly, on the 8th day at 7:15.10 PM CDT
-        - Expect next schedule to be September 9 at 12:15.10 AM UTC
+        - Tuesday August 6th at 10:34 PM UTC is 5:34 PM CDT.
+        - Scheduled for weekly, Thursday at 5:30
+        - Expect next schedule to be Thursday August 8th at 10:30 PM UTC
+        """
+        current_time = datetime(2013, 8, 6, 22, 34)
+        expected_next_schedule = datetime(2013, 8, 8, 22, 30)
+        schedule_out = self.lr_week.utc_of_next_schedule(current_time)
+        self.assertEqual(schedule_out, expected_next_schedule)
+
+    def test_month_update_full_month(self):
+        """Monthly Recurrences should work as expected moving forward a full month.
+
+        - Friday August 23rd at 12:34 AM UTC is Thursday August 22nd at 7:34 PM CDT.
+        - Scheduled for Monthly, on the 21st day at 7:15.10 PM
+        - Expect next schedule to be September 23 at 12:15.10 AM UTC
         """
         current_time = datetime(2013, 8, 23, 0, 34, 55)
         expected_next_schedule = datetime(2013, 9, 23, 0, 15, 10)
+        schedule_out = self.lr_month.utc_of_next_schedule(current_time)
+        self.assertEqual(schedule_out, expected_next_schedule)
+
+    def test_month_update_current_month(self):
+        """Monthly Recurrences should work as expected moving forward in the
+        current month.
+
+        - Friday August 16th at 12:34 AM UTC is Thursday August 15th at 7:34 PM CDT.
+        - Scheduled for Monthly, on the 21st day at 7:15.10 PM
+        - Expect next schedule to be August 23 at 12:15.10 AM UTC
+
+        """
+        current_time = datetime(2013, 8, 16, 0, 34, 55)
+        expected_next_schedule = datetime(2013, 8, 23, 0, 15, 10)
         schedule_out = self.lr_month.utc_of_next_schedule(current_time)
         self.assertEqual(schedule_out, expected_next_schedule)
 
