@@ -231,8 +231,8 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         schedule_out = self.lr_month.utc_of_next_schedule(current_time)
         self.assertEqual(schedule_out, expected_next_schedule)
 
-    def test_quarterly(self):
-        """Quarterly Recurrences should work as expected.
+    def test_quarterly_full_quarter(self):
+        """Quarterly Recurrences should be able to update a full quarter.
 
         - June 23rd at 12:34 AM UTC is June 22nd at 10:34 PM HKT.
         - Scheduled for Quarterly, on the 68th day at 4:30 PM HKT
@@ -240,6 +240,30 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         """
         current_time = datetime(2013, 6, 23, 0, 34, 55)
         expected_next_schedule = datetime(2013, 9, 8, 8, 30)
+        schedule_out = self.lr_quarter.utc_of_next_schedule(current_time)
+        self.assertEqual(schedule_out, expected_next_schedule)
+
+    def test_quarterly_current_quarter(self):
+        """Quarterly Recurrences should be able to update in the current quarter.
+
+        - April 23rd at 12:34 AM UTC is April 22nd at 10:34 PM HKT.
+        - Scheduled for Quarterly, on the 68th day at 4:30 PM HKT
+        - Expect next schedule to be June 8th at 8:30 AM UTC
+        """
+        current_time = datetime(2013, 4, 23, 0, 34, 55)
+        expected_next_schedule = datetime(2013, 6, 8, 8, 30)
+        schedule_out = self.lr_quarter.utc_of_next_schedule(current_time)
+        self.assertEqual(schedule_out, expected_next_schedule)
+
+    def test_quarterly_end_year(self):
+        """Quarterly Recurrences should be able to update through year end.
+
+        - December 23rd at 12:34 AM UTC is April 22nd at 10:34 PM HKT.
+        - Scheduled for Quarterly, on the 68th day at 4:30 PM HKT
+        - Expect next schedule to be March 8th at 8:30 AM UTC
+        """
+        current_time = datetime(2013, 12, 23, 0, 34, 55)
+        expected_next_schedule = datetime(2014, 3, 8, 8, 30)
         schedule_out = self.lr_quarter.utc_of_next_schedule(current_time)
         self.assertEqual(schedule_out, expected_next_schedule)
 
