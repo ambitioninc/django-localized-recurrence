@@ -30,8 +30,9 @@ setup(
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
-        'Framework :: Django :: 1.6',
         'Framework :: Django :: 1.7',
+        'Framework :: Django :: 1.8',
+        'Framework :: Django :: 1.9',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
@@ -43,7 +44,7 @@ setup(
     ],
     install_requires=[
         'Django>=1.7',
-        'django-timezone-field',
+        'django-timezone-field<2.0',
         'fleming>=0.4.3',
         'python-dateutil',
         'pytz',
