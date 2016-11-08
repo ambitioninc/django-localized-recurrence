@@ -12,7 +12,6 @@ class LocalizedRecurrenceAdmin(ModelAdmin):
         'previous_scheduled',
         'next_scheduled',
     ]
-    exclude = ['offset']
 
 
 site.register(LocalizedRecurrence, LocalizedRecurrenceAdmin)
