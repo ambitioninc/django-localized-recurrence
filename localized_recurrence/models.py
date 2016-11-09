@@ -123,7 +123,7 @@ class LocalizedRecurrence(models.Model):
 
     """
     interval = models.CharField(max_length=18, default='DAY', choices=INTERVAL_CHOICES)
-    offset = DurationField(default=timedelta(0))
+    offset = models.DurationField(default=timedelta(0))
     timezone = TimeZoneField(default='UTC')
     previous_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
     next_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
