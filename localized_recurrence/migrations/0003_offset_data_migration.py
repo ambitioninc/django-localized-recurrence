@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+import datetime
 from django.db import migrations
 
 
@@ -9,7 +10,7 @@ def migrate_integers_to_intervals(apps, schema_editor):
     # Migrate custom DurationField values to Django's Native DurationField values
     LocalizedRecurrence = apps.get_model('localized_recurrence', 'LocalizedRecurrence')
     for lr in LocalizedRecurrence.objects.all():
-        lr.offset2 = lr.offset
+        lr.offset2 = datetime.timedelta(seconds=lr.offset)
         lr.save()
 
 
