@@ -8,8 +8,6 @@ from timezone_field import TimeZoneField
 import fleming
 import pytz
 
-from .fields import DurationField
-
 
 INTERVAL_CHOICES = (
     ('DAY', 'Day'),
