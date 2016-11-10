@@ -25,7 +25,7 @@ class LocalizedRecurrenceUpdateTest(TestCase):
 
     def test_update_offset(self):
         lr = G(LocalizedRecurrence)
-        lr.update(offset=1)
+        lr.update(offset=timedelta(seconds=1))
         lr = LocalizedRecurrence.objects.get(id=lr.id)
         self.assertEqual(lr.offset, timedelta(seconds=1))
 

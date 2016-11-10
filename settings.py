@@ -38,6 +38,5 @@ def configure_settings():
                 'localized_recurrence',
                 'localized_recurrence.tests',
             ),
-            ROOT_URLCONF='localized_recurrence.urls',
             DEBUG=False,
         )
