@@ -1,7 +1,8 @@
-import multiprocessing
-assert multiprocessing
 import re
 from setuptools import setup, find_packages
+
+import multiprocessing
+assert multiprocessing
 
 
 def get_version():
@@ -38,13 +39,14 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Topic :: Internet :: WWW/HTTP',
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
     install_requires=[
         'Django>=1.8,<1.10',
         'django-timezone-field<2.0',
-        'fleming>=0.4.3',
+        'fleming>=0.4.4',
         'python-dateutil',
         'pytz',
     ],
