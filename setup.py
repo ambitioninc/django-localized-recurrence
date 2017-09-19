@@ -47,7 +47,7 @@ setup(
     ],
     install_requires=[
         'Django>=1.9',
-        'django-timezone-field<2.0',
+        'django-timezone-field>=2.0',
         'fleming>=0.4.6',
         'python-dateutil',
         'pytz',
