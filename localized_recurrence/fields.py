@@ -18,13 +18,13 @@ class CastOnAssignDescriptor(object):
     def __init__(self, field):
         self.field = field
 
-    def __get__(self, obj, type=None):
-        if obj is None:  # pragma: no cover
+    def __get__(self, obj, type=None):  # pragma: no cover
+        if obj is None:
             return self
         return obj.__dict__[self.field.name]
 
-    def __set__(self, obj, value):
-        obj.__dict__[self.field.name] = self.field.to_python(value)  # pragma: no cover
+    def __set__(self, obj, value):  # pragma: no cover
+        obj.__dict__[self.field.name] = self.field.to_python(value)
 
 
 class DurationField(IntegerField):
