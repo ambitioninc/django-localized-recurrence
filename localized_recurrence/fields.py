@@ -1,13 +1,33 @@
 from datetime import timedelta
 import re
 
-from django.db.models import SubfieldBase
 from django.db.models.fields import IntegerField
 import six
 from six import with_metaclass
 
 
-class DurationField(with_metaclass(SubfieldBase, IntegerField)):
+class CastOnAssignDescriptor(object):
+    """
+    A property descriptor which ensures that `field.to_python()` is called on _every_ assignment to the field.
+    This used to be provided by the `django.db.models.subclassing.Creator` class, which in turn
+    was used by the deprecated-in-Django-1.10 `SubfieldBase` class, hence the reimplementation here.
+    https://stackoverflow.com/questions/39392343/
+    how-do-i-make-a-custom-model-field-call-to-python-when-the-field-is-accessed-imm
+    """
+
+    def __init__(self, field):
+        self.field = field
+
+    def __get__(self, obj, type=None):
+        if obj is None:
+            return self
+        return obj.__dict__[self.field.name]
+
+    def __set__(self, obj, value):
+        obj.__dict__[self.field.name] = self.field.to_python(value)
+
+
+class DurationField(IntegerField):
     """A field to store durations of time with accuracy to the second.
 
     A Duration Field will automatically convert between python
@@ -42,6 +62,10 @@ class DurationField(with_metaclass(SubfieldBase, IntegerField)):
     def __init__(self, *args, **kwargs):
         """Call out to the super. Makes docs cleaner."""
         return super(DurationField, self).__init__(*args, **kwargs)
+
+    def contribute_to_class(self, cls, name):
+        super(DurationField, self).contribute_to_class(cls, name)
+        setattr(cls, name, CastOnAssignDescriptor(self))
 
     def to_python(self, value):
         """Convert a stored duration into a python datetime.timedelta object.
