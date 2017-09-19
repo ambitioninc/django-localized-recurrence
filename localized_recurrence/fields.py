@@ -3,7 +3,6 @@ import re
 
 from django.db.models.fields import IntegerField
 import six
-from six import with_metaclass
 
 
 class CastOnAssignDescriptor(object):
