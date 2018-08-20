@@ -123,7 +123,8 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
             timezone=pytz.timezone('Asia/Hong_Kong'))
 
     def test_basic_works(self):
-        """Test a simple case of utc_of_next_schedule.
+        """
+        Test a simple case of utc_of_next_schedule.
 
         - The given recurrence is scheduled daily for Eastern Time at noon.
         - The given current date in UTC is 2013/1/15::17:05:22
@@ -156,7 +157,8 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_after_midnight(self):
-        """The case when the scheduled and current time are after midnight.
+        """
+        The case when the scheduled and current time are after midnight.
 
         - The given recurrence is scheduled daily for Eastern Time at 12:01 AM.
         - The given current date in UTC is 2013/1/15::05:05:22 -> 12:05AM EST
@@ -170,7 +172,8 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_week_update_full_week(self):
-        """Weekly Recurrences should be able to add a full week.
+        """
+        Weekly Recurrences should be able to add a full week.
 
         - Thursday August 8th at 10:34 PM UTC is 5:34 PM CDT.
         - Scheduled for weekly, Thursday at 5:30
@@ -182,7 +185,8 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_weekly_update_current_week(self):
-        """Weekly Recurrences should be able to work in the current week.
+        """
+        Weekly Recurrences should be able to work in the current week.
 
         - Tuesday August 6th at 10:34 PM UTC is 5:34 PM CDT.
         - Scheduled for weekly, Thursday at 5:30
@@ -194,7 +198,8 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_month_update_full_month(self):
-        """Monthly Recurrences should work as expected moving forward a full month.
+        """
+        Monthly Recurrences should work as expected moving forward a full month.
 
         - Friday August 23rd at 12:34 AM UTC is Thursday August 22nd at 7:34 PM CDT.
         - Scheduled for Monthly, on the 21st day at 7:15.10 PM
@@ -206,7 +211,8 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_month_update_current_month(self):
-        """Monthly Recurrences should work as expected moving forward in the
+        """
+        Monthly Recurrences should work as expected moving forward in the
         current month.
 
         - Friday August 16th at 12:34 AM UTC is Thursday August 15th at 7:34 PM CDT.
@@ -220,7 +226,8 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_month_year_end_update(self):
-        """Monthly Recurrences should transition over years correctly
+        """
+        Monthly Recurrences should transition over years correctly
 
         - Monday December 23 at 2:34 AM UTC is Sunday August 22nd at 9:34 PM CDT.
         - Scheduled for Monthly, on the 21st day at 7:15.10 PM CDT
@@ -232,19 +239,27 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_quarterly_full_quarter(self):
-        """Quarterly Recurrences should be able to update a full quarter.
+        """
+        Quarterly Recurrences should be able to update a full quarter.
 
         - June 23rd at 12:34 AM UTC is June 22nd at 10:34 PM HKT.
         - Scheduled for Quarterly, on the 68th day at 4:30 PM HKT
-        - Expect next schedule to be September 8th at 8:30 AM UTC
+        - Expect next schedule to be September 7th at 8:30 AM UTC
         """
         current_time = datetime(2013, 6, 23, 0, 34, 55)
-        expected_next_schedule = datetime(2013, 9, 8, 8, 30)
+        expected_next_schedule = datetime(2013, 9, 7, 8, 30)
         schedule_out = self.lr_quarter.utc_of_next_schedule(current_time)
+        self.lr_quarter = G(
+            LocalizedRecurrence,
+            interval='QUARTER',
+            offset=timedelta(days=68, hours=16, minutes=30),
+            timezone=pytz.timezone('Asia/Hong_Kong')
+        )
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_quarterly_current_quarter(self):
-        """Quarterly Recurrences should be able to update in the current quarter.
+        """
+        Quarterly Recurrences should be able to update in the current quarter.
 
         - April 23rd at 12:34 AM UTC is April 22nd at 10:34 PM HKT.
         - Scheduled for Quarterly, on the 68th day at 4:30 PM HKT
@@ -253,22 +268,38 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         current_time = datetime(2013, 4, 23, 0, 34, 55)
         expected_next_schedule = datetime(2013, 6, 8, 8, 30)
         schedule_out = self.lr_quarter.utc_of_next_schedule(current_time)
+
+        self.lr_quarter = G(
+            LocalizedRecurrence,
+            interval='QUARTER',
+            offset=timedelta(days=68, hours=16, minutes=30),
+            timezone=pytz.timezone('Asia/Hong_Kong')
+        )
+
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_quarterly_end_year(self):
-        """Quarterly Recurrences should be able to update through year end.
+        """
+        Quarterly Recurrences should be able to update through year end.
 
         - December 23rd at 12:34 AM UTC is April 22nd at 10:34 PM HKT.
         - Scheduled for Quarterly, on the 68th day at 4:30 PM HKT
-        - Expect next schedule to be March 8th at 8:30 AM UTC
+        - Expect next schedule to be March 10th at 8:30 AM UTC
         """
         current_time = datetime(2013, 12, 23, 0, 34, 55)
-        expected_next_schedule = datetime(2014, 3, 8, 8, 30)
+        expected_next_schedule = datetime(2014, 3, 10, 8, 30)
         schedule_out = self.lr_quarter.utc_of_next_schedule(current_time)
+        self.lr_quarter = G(
+            LocalizedRecurrence,
+            interval='QUARTER',
+            offset=timedelta(days=68, hours=16, minutes=30),
+            timezone=pytz.timezone('Asia/Hong_Kong')
+        )
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_yearly(self):
-        """Yearly Recurrences should work as expected.
+        """
+        Yearly Recurrences should work as expected.
 
         - June 23rd at 12:34 AM UTC is June 22nd at 10:34 PM HKT.
         - Scheduled for Yearly, on the 31st day at 4:30 PM HKT
@@ -280,7 +311,8 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_into_dst_boundary(self):
-        """Recurrences happen at the correct local time after going into DST.
+        """
+        Recurrences happen at the correct local time after going into DST.
 
         Going into daylight savings time should mean the UTC time is
         an hour less on the next recurrence.
@@ -296,7 +328,8 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_out_of_dst_boundary(self):
-        """Recurrences at the correct local time after going out of UTC.
+        """
+        Recurrences at the correct local time after going out of UTC.
 
         Going into daylight savings time should mean the UTC time is
         an hour greater on the next recurrence.
@@ -312,7 +345,8 @@ class LocalizedRecurrenceUtcOfNextScheduleTest(TestCase):
         self.assertEqual(schedule_out, expected_next_schedule)
 
     def test_utc_plus(self):
-        """Test a timezone that is UTC + 2.
+        """
+        Test a timezone that is UTC + 2.
 
         - Europe/Berlin DST is UTC + 2
         """
@@ -473,7 +507,8 @@ class ReplaceWithOffsetTest(TestCase):
         self.assertEqual(dt_expected, dt_out)
 
     def test_bad_interval(self):
-        """A missformed interval should raise a value error
+        """
+        A missformed interval should raise a value error
         """
         dt_in = datetime(2013, 1, 20, 12, 45, 48)
         td_in = timedelta(days=15, hours=3, minutes=3, seconds=3)

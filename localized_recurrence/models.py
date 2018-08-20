@@ -167,25 +167,27 @@ class LocalizedRecurrence(models.Model):
         without persisting an update to the schedule, this funciton
         can be called without side-effect.
         """
-        print('')
-        print('comparing current time', current_time, 'to next schedulde', self.next_scheduled)
-        if self.next_scheduled <= current_time:
-            next_scheduled_utc = datetime(self.next_scheduled.year, self.next_scheduled.month, self.next_scheduled.day, self.next_scheduled.hour, self.next_scheduled.minute, self.next_scheduled.second)
+        # print('')
+        next_scheduled_utc = datetime(
+            self.next_scheduled.year, self.next_scheduled.month, self.next_scheduled.day,
+            self.next_scheduled.hour, self.next_scheduled.minute, self.next_scheduled.second
+        )
 
+        # print('comparing current time', current_time, 'to next schedulde', self.next_scheduled)
+        while next_scheduled_utc <= current_time:
             # Convert to local time
-            print('')
-            print('utc of next schedule from', next_scheduled_utc)
+            # print('')
+            # print('utc of next schedule from', next_scheduled_utc)
             next_scheduled_local = fleming.convert_to_tz(next_scheduled_utc, self.timezone)
-            print('local time', self.timezone, next_scheduled_local)
+            # print('local time', self.timezone, next_scheduled_local)
             replaced_with_offset = _replace_with_offset(next_scheduled_local, self.offset, self.interval)
-            print('replaced with offset', replaced_with_offset)
+            # print('replaced with offset', replaced_with_offset)
             local_scheduled_time = fleming.fleming.dst_normalize(replaced_with_offset)
-            print('normalized time', local_scheduled_time)
+            # print('normalized time', local_scheduled_time)
 
             # Check if last day of month
             # _, last_day_of_current_month = calendar.monthrange(local_scheduled_time.year, local_scheduled_time.month)
             is_last_day = self.interval == 'MONTH' and self.offset.days >= 28
-            # print('last day of this month is', last_day_of_current_month)
             # print('offset days is', self.offset.days)
 
             # We only want to add the offset if
@@ -206,74 +208,28 @@ class LocalizedRecurrence(models.Model):
                 additional_time[self.interval],
                 within_tz=self.timezone
             )
-            print('after adding offset', next_local_scheduled_time)
+            # print('after adding offset', next_local_scheduled_time)
 
-            # Check if we need to set the day to the next month's last day
+            # Check if we need to manually set the day to the next month's last day rather than apply the offset info
             if self.interval == 'MONTH' and is_last_day:
-                _, last_day_of_next_month = calendar.monthrange(next_local_scheduled_time.year, next_local_scheduled_time.month)
+                _, last_day_of_next_month = calendar.monthrange(
+                    next_local_scheduled_time.year,
+                    next_local_scheduled_time.month
+                )
                 next_local_scheduled_time = next_local_scheduled_time.replace(day=last_day_of_next_month)
-                print('this is a month and new last day is', last_day_of_next_month, 'so new scheduled is', next_local_scheduled_time)
+                # print(
+                #     'this is a month and new last day is', last_day_of_next_month,
+                #     'so new scheduled is', next_local_scheduled_time
+                # )
+            else:
+                # Apply the offset info for all cases that are not end of month
+                next_local_scheduled_time = _replace_with_offset(next_local_scheduled_time, self.offset, self.interval)
 
             # Convert back to utc
-            utc_scheduled_time = fleming.convert_to_tz(next_local_scheduled_time, pytz.utc, return_naive=True)
-            print('return', utc_scheduled_time)
+            next_scheduled_utc = fleming.convert_to_tz(next_local_scheduled_time, pytz.utc, return_naive=True)
 
-            return utc_scheduled_time
-
-        print('not it is not, so return next scheduled', self.next_scheduled)
-        return self.next_scheduled
-
-        utc_scheduled_time = fleming.add_timedelta(
-            utc_scheduled_time,
-            additional_time[self.interval],
-            within_tz=self.timezone
-        )
-
-        print('')
-        print('utc of next schedule from', current_time)
-        local_time = fleming.convert_to_tz(current_time, self.timezone)
-        print('local time', self.timezone, local_time)
-        replaced_with_offset = _replace_with_offset(local_time, self.offset, self.interval)
-        print('replaced with offset', replaced_with_offset)
-        local_scheduled_time = fleming.fleming.dst_normalize(replaced_with_offset)
-        print('normalized time', local_scheduled_time)
-        utc_scheduled_time = fleming.convert_to_tz(local_scheduled_time, pytz.utc, return_naive=True)
-        print('utc scheduled', utc_scheduled_time)
-        if utc_scheduled_time <= current_time:
-            print('yes less than so add the time')
-            additional_time = {
-                'DAY': timedelta(days=1),
-                'WEEK': timedelta(weeks=1),
-                'MONTH': relativedelta(months=1),
-                'QUARTER': relativedelta(months=3),
-                'YEAR': relativedelta(years=1),
-            }
-
-            # Check if last day of month
-            _, last_day_of_current_month = calendar.monthrange(self.next_scheduled.year, self.next_scheduled.month)
-            print('last day of this month is', last_day_of_current_month)
-            print('offset days is', self.offset.days)
-
-            utc_scheduled_time = fleming.add_timedelta(
-                utc_scheduled_time,
-                additional_time[self.interval],
-                within_tz=self.timezone
-            )
-            print('after adding offset', utc_scheduled_time)
-
-            # Check if we need to set the day to the next month's last day
-            if self.interval == 'MONTH' and last_day_of_current_month:
-                _, last_day_of_next_month = calendar.monthrange(utc_scheduled_time.year, utc_scheduled_time.month)
-                utc_scheduled_time = utc_scheduled_time.replace(day=last_day_of_next_month)
-                print('this is a month and new last day is', last_day_of_next_month, 'so new scheduled is', utc_scheduled_time)
-
-            print('interval?', self.interval)
-            print('after adding', utc_scheduled_time)
-        else:
-            print('not less than')
-
-        print('return', utc_scheduled_time)
-        return utc_scheduled_time
+        # print('return', next_scheduled_utc)
+        return next_scheduled_utc
 
 
 def _update_schedule(recurrences, time=None):
@@ -308,10 +264,17 @@ def _replace_with_offset(dt, offset, interval):
         dt_out = dt.replace(day=day, hour=hours, minute=minutes, second=seconds)
     elif interval == 'quarter':
         month_range = [[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]][int((dt.month - 1) / 3)]
+        # print('replacing quarter from', dt)
+        # print('month range', month_range)
         quarter_days = sum(calendar.monthrange(dt.year, month)[1] for month in month_range)
+        # print('quarter days', quarter_days)
         days = offset.days if offset.days <= (quarter_days - 1) else (quarter_days - 1)
+        # print('days', days)
         dt_out = fleming.floor(dt, month=3).replace(hour=hours, minute=minutes, second=seconds)
+        # print('dt out', dt_out)
         dt_out += timedelta(days)
+        # print('added days', days)
+        # print('with time delta', dt_out)
     elif interval == 'year':
         leap_year_extra_days = 1 if calendar.isleap(dt.year) else 0
         days = offset.days if offset.days <= 364 + leap_year_extra_days else 364 + leap_year_extra_days
