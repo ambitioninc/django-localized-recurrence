@@ -345,7 +345,8 @@ class UpdateScheduleTest(TestCase):
 
 class ReplaceWithOffsetTest(TestCase):
     def test_day(self):
-        """_replace_with_offset works as expected with a 'DAY' interval.
+        """
+        _replace_with_offset works as expected with a 'DAY' interval.
         """
         dt_in = datetime(2013, 1, 20, 12, 45, 48)
         td_in = timedelta(hours=3, minutes=3, seconds=3)
@@ -355,7 +356,8 @@ class ReplaceWithOffsetTest(TestCase):
         self.assertEqual(dt_out, dt_expected)
 
     def test_week(self):
-        """_replace_with_offset works as expected with a 'WEEK' interval.
+        """
+        _replace_with_offset works as expected with a 'WEEK' interval.
         """
         dt_in = datetime(2013, 1, 20, 12, 45, 48)
         td_in = timedelta(days=4, hours=3, minutes=3, seconds=3)
@@ -365,7 +367,8 @@ class ReplaceWithOffsetTest(TestCase):
         self.assertEqual(dt_out, dt_expected)
 
     def test_week_on_month_boundary(self):
-        """_replace_with_offset using interval 'WEEK' should roll over months
+        """
+        _replace_with_offset using interval 'WEEK' should roll over months
         correctly.
         """
         dt_in = datetime(2013, 7, 30, 12, 45, 48)
@@ -376,7 +379,8 @@ class ReplaceWithOffsetTest(TestCase):
         self.assertEqual(dt_out, dt_expected)
 
     def test_month(self):
-        """_replace_with_offset works as expected with a 'MONTH' interval.
+        """
+        _replace_with_offset works as expected with a 'MONTH' interval.
         """
         dt_in = datetime(2013, 1, 20, 12, 45, 48)
         td_in = timedelta(days=15, hours=3, minutes=3, seconds=3)
@@ -386,11 +390,30 @@ class ReplaceWithOffsetTest(TestCase):
         self.assertEqual(dt_out, dt_expected)
 
     def test_last_day_of_month(self):
-        dt_in = datetime(2013, 2, 20, 12, 45, 48)
-        td_in = timedelta(days=31, hours=3, minutes=3, seconds=3)
-        interval_in = 'MONTH'
+        """
+        Check dates for a full year where the utc time is the first and the time zone is the previous day
+        """
+        time_delta = timedelta(days=30, hours=23, minutes=3, seconds=3)
+        dt_start = datetime(2013, 2, 20, 23, 45, 48)
+        interval_name = 'MONTH'
+        timezone_name = 'US/Central'
+        recurrence = LocalizedRecurrence.objects.create(
+            interval=interval_name,
+            offset=time_delta,
+            timezone=timezone_name,
+            next_scheduled=dt_start,
+        )
+
+        for i in range(0, 5):
+            print('')
+            print('i', i)
+            print(recurrence.next_scheduled)
+            # current_time = recurrence.next_scheduled + timedelta(hours=1)
+            recurrence.update_schedule(recurrence.next_scheduled)
+        return
+
         dt_expected = datetime(2013, 2, 28, 3, 3, 3)
-        dt_out = _replace_with_offset(dt_in, td_in, interval_in)
+        dt_out = _replace_with_offset(dt_start, time_delta, interval_name)
         self.assertEqual(dt_out, dt_expected)
 
     def test_quarter(self):
