@@ -438,17 +438,50 @@ class ReplaceWithOffsetTest(TestCase):
             next_scheduled=dt_start,
         )
 
-        for i in range(0, 5):
-            print('')
-            print('i', i)
-            print(recurrence.next_scheduled)
-            # current_time = recurrence.next_scheduled + timedelta(hours=1)
-            recurrence.update_schedule(recurrence.next_scheduled)
-        return
+        # Check a full year of dates. The first next recurrence should be the month after it starts because
+        # The start time is weird because it should be set correctly to begin with. Setting it to 2-20 should not
+        # be happening. The app should initially set it to the correct first fire date
+        self.assertEqual(recurrence.next_scheduled, datetime(2013, 2, 20, 23, 45, 48))
+        recurrence.update_schedule(recurrence.next_scheduled)
 
-        dt_expected = datetime(2013, 2, 28, 3, 3, 3)
-        dt_out = _replace_with_offset(dt_start, time_delta, interval_name)
-        self.assertEqual(dt_out, dt_expected)
+        self.assertEqual(recurrence.next_scheduled, datetime(2013, 4, 1, 4, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
+
+        self.assertEqual(recurrence.next_scheduled, datetime(2013, 5, 1, 4, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
+
+        self.assertEqual(recurrence.next_scheduled, datetime(2013, 6, 1, 4, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
+
+        self.assertEqual(recurrence.next_scheduled, datetime(2013, 7, 1, 4, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
+
+        self.assertEqual(recurrence.next_scheduled, datetime(2013, 8, 1, 4, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
+
+        self.assertEqual(recurrence.next_scheduled, datetime(2013, 9, 1, 4, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
+
+        self.assertEqual(recurrence.next_scheduled, datetime(2013, 10, 1, 4, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
+
+        self.assertEqual(recurrence.next_scheduled, datetime(2013, 11, 1, 4, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
+
+        self.assertEqual(recurrence.next_scheduled, datetime(2013, 12, 1, 5, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
+
+        self.assertEqual(recurrence.next_scheduled, datetime(2014, 1, 1, 5, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
+
+        self.assertEqual(recurrence.next_scheduled, datetime(2014, 2, 1, 5, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
+
+        self.assertEqual(recurrence.next_scheduled, datetime(2014, 3, 1, 5, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
+
+        self.assertEqual(recurrence.next_scheduled, datetime(2014, 4, 1, 4, 3, 3))
+        recurrence.update_schedule(recurrence.next_scheduled)
 
     def test_quarter(self):
         dt_in = datetime(2013, 4, 20, 12, 45, 48)
