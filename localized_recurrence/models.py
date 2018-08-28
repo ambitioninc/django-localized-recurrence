@@ -20,7 +20,8 @@ INTERVAL_CHOICES = (
 
 class LocalizedRecurrenceQuerySet(models.query.QuerySet):
     def update_schedule(self, time=None):
-        """Update the schedule times for all the provided recurrences.
+        """
+        Update the schedule times for all the provided recurrences.
 
         :type time: :py:class:`datetime.datetime`
         :param time: The time the schedule was checked. If ``None``,
@@ -51,7 +52,8 @@ class LocalizedRecurrenceManager(models.Manager):
         return LocalizedRecurrenceQuerySet(self.model)
 
     def update_schedule(self, time=None):
-        """Update the schedule times for all recurrences.
+        """
+        Update the schedule times for all recurrences.
 
         Functions exactly the same as the method on the querysets. The
         following to calls are equivalent:
@@ -139,7 +141,8 @@ class LocalizedRecurrence(models.Model):
         return self.save()
 
     def update_schedule(self, time=None):
-        """Update the schedule for this recurrence or an object it tracks.
+        """
+        Update the schedule for this recurrence or an object it tracks.
 
         :type time: :py:class:`datetime.datetime`
         :param time: The time the schedule was checked. If ``None``,
@@ -152,7 +155,8 @@ class LocalizedRecurrence(models.Model):
         _update_schedule([self], time)
 
     def utc_of_next_schedule(self, current_time):
-        """The time in UTC of this instance's next recurrence.
+        """
+        Generates the next recurrence time in utc after the current time
 
         :type current_time: :py:class:`datetime.datetime`
         :param current_time: The current time in utc.
@@ -160,29 +164,66 @@ class LocalizedRecurrence(models.Model):
         Usually this function does not need to be called directly, but
         will be used by ``update_schedule``. If however, you need to
         check when the next recurrence of a instance would happen,
-        without persisting an update to the schedule, this funciton
+        without persisting an update to the schedule, this function
         can be called without side-effect.
         """
-        local_time = fleming.convert_to_tz(current_time, self.timezone)
-        local_scheduled_time = fleming.fleming.dst_normalize(
-            _replace_with_offset(local_time, self.offset, self.interval))
-        utc_scheduled_time = fleming.convert_to_tz(local_scheduled_time, pytz.utc, return_naive=True)
-        if utc_scheduled_time <= current_time:
-            additional_time = {
-                'DAY': timedelta(days=1),
-                'WEEK': timedelta(weeks=1),
-                'MONTH': relativedelta(months=1),
-                'QUARTER': relativedelta(months=3),
-                'YEAR': relativedelta(years=1),
-            }
-            utc_scheduled_time = fleming.add_timedelta(
-                utc_scheduled_time, additional_time[self.interval], within_tz=self.timezone)
+        # Make a copy of the next scheduled datetime
+        next_scheduled_utc = datetime(
+            self.next_scheduled.year, self.next_scheduled.month, self.next_scheduled.day,
+            self.next_scheduled.hour, self.next_scheduled.minute, self.next_scheduled.second
+        )
 
-        return utc_scheduled_time
+        additional_time = {
+            'DAY': timedelta(days=1),
+            'WEEK': timedelta(weeks=1),
+            'MONTH': relativedelta(months=1),
+            'QUARTER': relativedelta(months=3),
+            'YEAR': relativedelta(years=1),
+        }
+
+        # Keep updating next scheduled to the next recurrence until it is greater than current time
+        while next_scheduled_utc <= current_time:
+            # Convert to local time
+            next_scheduled_local = fleming.convert_to_tz(next_scheduled_utc, self.timezone)
+
+            # Replace with the offset data
+            replaced_with_offset = _replace_with_offset(next_scheduled_local, self.offset, self.interval)
+
+            # Normalize to handle dst
+            local_scheduled_time = fleming.fleming.dst_normalize(replaced_with_offset)
+
+            # Add the time delta
+            next_local_scheduled_time = fleming.add_timedelta(
+                local_scheduled_time,
+                additional_time[self.interval],
+                within_tz=self.timezone
+            )
+
+            # Check if last day of month
+            is_last_day = self.interval == 'MONTH' and self.offset.days >= 28
+
+            # Check if we need to manually set the day to the next month's last day rather than apply the offset info
+            if self.interval == 'MONTH' and is_last_day:
+                _, last_day_of_next_month = calendar.monthrange(
+                    next_local_scheduled_time.year,
+                    next_local_scheduled_time.month
+                )
+
+                # Replace day with last day of month
+                next_local_scheduled_time = next_local_scheduled_time.replace(day=last_day_of_next_month)
+            else:
+                # Apply the offset info for all cases that are not end of month
+                next_local_scheduled_time = _replace_with_offset(next_local_scheduled_time, self.offset, self.interval)
+
+            # Convert back to utc
+            next_scheduled_utc = fleming.convert_to_tz(next_local_scheduled_time, pytz.utc, return_naive=True)
+
+        return next_scheduled_utc
 
 
 def _update_schedule(recurrences, time=None):
-        """Update the schedule times for all the provided recurrences.
+        """
+        Update the schedule times for all the provided recurrences.
         """
         time = time or datetime.utcnow()
         for recurrence in recurrences:
@@ -192,7 +233,8 @@ def _update_schedule(recurrences, time=None):
 
 
 def _replace_with_offset(dt, offset, interval):
-    """Replace components of a datetime with those of a timedelta.
+    """
+    Replace components of a datetime with those of a timedelta.
 
     This replacement is done within the given interval. This means the
     the final result, will the be a datetime, at the desired offset
