@@ -1,11 +1,13 @@
 from datetime import datetime, timedelta
 
+import django
 from django.test import TestCase
 from django_dynamic_fixture import G
+from django.utils import timezone
 import pytz
 
 from ..models import LocalizedRecurrence, LocalizedRecurrenceQuerySet
-from ..models import _replace_with_offset, _update_schedule
+from ..models import _replace_with_offset, _update_schedule, _prepare_datetime_field_value
 
 
 class LocalizedRecurrenceUpdateTest(TestCase):
@@ -548,3 +550,87 @@ class ReplaceWithOffsetTest(TestCase):
         interval_in = 'blah'
         with self.assertRaises(ValueError):
             _replace_with_offset(dt_in, td_in, interval_in)
+
+
+class LocalizedRecurrenceUseTzSetting(TestCase):
+
+    def test_with_and_without_use_tz(self):
+        lr_with_use_tz = G(LocalizedRecurrence, timezone=pytz.timezone('US/Eastern'))
+        lr_with_use_tz_utc = G(LocalizedRecurrence, timezone=pytz.UTC)
+        with self.settings(USE_TZ=True, TIME_ZONE='UTC'):
+            lr_with_use_tz.update_schedule()
+            lr_with_use_tz_utc.update_schedule()
+        self.assertTrue(timezone.is_aware(lr_with_use_tz.next_scheduled))
+        self.assertTrue(timezone.is_aware(lr_with_use_tz_utc.next_scheduled))
+
+        lr_without_use_tz = G(LocalizedRecurrence)
+        with self.settings(USE_TZ=False):
+            lr_without_use_tz.update_schedule()
+        self.assertFalse(timezone.is_aware(lr_without_use_tz.next_scheduled))
+
+        self.assertEqual(lr_with_use_tz_utc.next_scheduled.replace(tzinfo=None), lr_without_use_tz.next_scheduled)
+
+    def test_prepare_datetime_field(self):
+        self.assertIsNone(_prepare_datetime_field_value(None))
+        naive_now = datetime.now()
+        aware_now = naive_now.astimezone(pytz.timezone('US/Pacific'))
+        with self.settings(USE_TZ=True):
+            self.assertEqual(naive_now, _prepare_datetime_field_value(naive_now, make_aware=False))
+            self.assertEqual(aware_now, _prepare_datetime_field_value(aware_now))
+
+    def test_next_and_previous_scheduled_defaults(self):
+        with self.settings(USE_TZ=True, TIME_ZONE='UTC'):
+            lr = G(LocalizedRecurrence, timezone=pytz.timezone('US/Eastern'))
+            self.assertEqual(lr.previous_scheduled, datetime(1970, 1, 1, tzinfo=pytz.UTC))
+            self.assertEqual(lr.next_scheduled, datetime(1970, 1, 1, tzinfo=pytz.UTC))
+        with self.settings(USE_TZ=True, TIME_ZONE='US/Pacific'):
+            lr = G(LocalizedRecurrence, timezone=pytz.timezone('US/Eastern'))
+            self.assertEqual(lr.previous_scheduled, datetime(1970, 1, 1, tzinfo=pytz.timezone('US/Pacific')))
+            self.assertEqual(lr.next_scheduled, datetime(1970, 1, 1, tzinfo=pytz.timezone('US/Pacific')))
+        with self.settings(USE_TZ=False, TIME_ZONE='US/Pacific'):
+            lr = G(LocalizedRecurrence, timezone=pytz.timezone('US/Eastern'))
+            self.assertEqual(lr.previous_scheduled, datetime(1970, 1, 1))
+            self.assertEqual(lr.next_scheduled, datetime(1970, 1, 1))
+
+    def test_database_with_or_without_tz_in_utc(self):
+        scheduled_with_utc_tz = datetime(2018, 10, 10, tzinfo=pytz.UTC)
+        scheduled_with_est_tz = datetime(2018, 10, 10, tzinfo=pytz.timezone('US/Eastern'))
+        scheduled_without_tz = datetime(2018, 10, 10)
+        # SQLite backend does not support timezone-aware datetimes when USE_TZ is False.
+        with self.settings(USE_TZ=True, TIME_ZONE="UTC"):
+            lr_with_utc_tz = G(LocalizedRecurrence, next_scheduled=scheduled_with_utc_tz,
+                               previous_scheduled=scheduled_with_utc_tz, timezone=pytz.UTC)
+            lr_with_est_tz = G(LocalizedRecurrence, next_scheduled=scheduled_with_est_tz,
+                               previous_scheduled=scheduled_with_est_tz, timezone=pytz.timezone('US/Eastern'))
+        lr_without_tz = G(LocalizedRecurrence, timezone=None, next_scheduled=scheduled_without_tz,
+                          previous_scheduled=scheduled_without_tz)
+        with self.settings(USE_TZ=True, TIME_ZONE="UTC"):
+            self.assertEqual(lr_with_utc_tz.next_scheduled, lr_without_tz.next_scheduled.replace(tzinfo=pytz.UTC))
+            self.assertEqual(lr_with_utc_tz.next_scheduled.replace(tzinfo=None),
+                             lr_with_est_tz.next_scheduled.replace(tzinfo=None))
+
+        with self.settings(USE_TZ=False):
+            # Now make next_scheduled non-aware, and make sure that still works
+            # (Django automatically converts non-aware to aware in the database)
+            lr_with_utc_tz.previous_scheduled = datetime(2018, 10, 11)
+            lr_with_utc_tz.next_scheduled = datetime(2018, 10, 11)
+            lr_with_utc_tz.save()
+            lr_with_utc_tz.refresh_from_db()
+            self.assertEqual(lr_with_utc_tz.next_scheduled,
+                             lr_without_tz.next_scheduled + timedelta(days=1))
+
+            version = django.VERSION
+            # assertWarns is only Django 2.1+
+            if version[0] >= 2 and version[1] >= 1:  # pragma: no cover
+                with self.settings(USE_TZ=True, TIME_ZONE="UTC"):
+                    # Now make next_scheduled non-aware, and make sure that still works
+                    with self.assertWarnsRegex(RuntimeWarning, r"DateTimeField LocalizedRecurrence\."
+                                               r"(next|previous)\_scheduled "
+                                               r"received a naive datetime \(2018-10-12 00:00:00\) "
+                                               r"while time zone support is active\."):
+                        lr_with_utc_tz.previous_scheduled = datetime(2018, 10, 12)
+                        lr_with_utc_tz.next_scheduled = datetime(2018, 10, 12)
+                        lr_with_utc_tz.save()
+                    lr_with_utc_tz.refresh_from_db()
+                    self.assertEqual(lr_with_utc_tz.next_scheduled.replace(tzinfo=None),
+                                     lr_without_tz.next_scheduled + timedelta(days=2))
