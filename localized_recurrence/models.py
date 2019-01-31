@@ -2,7 +2,9 @@ from datetime import datetime, timedelta
 import calendar
 
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from timezone_field import TimeZoneField
 import fleming
@@ -16,6 +18,13 @@ INTERVAL_CHOICES = (
     ('QUARTER', 'Quarter'),
     ('YEAR', 'Year'),
 )
+
+
+def default_scheduled():
+    tzinfo = None
+    if settings.USE_TZ:
+        tzinfo = pytz.timezone(settings.TIME_ZONE)
+    return datetime(1970, 1, 1, tzinfo=tzinfo)
 
 
 class LocalizedRecurrenceQuerySet(models.query.QuerySet):
@@ -125,8 +134,8 @@ class LocalizedRecurrence(models.Model):
     interval = models.CharField(max_length=18, default='DAY', choices=INTERVAL_CHOICES)
     offset = models.DurationField(default=timedelta(0))
     timezone = TimeZoneField(default='UTC')
-    previous_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
-    next_scheduled = models.DateTimeField(default=datetime(1970, 1, 1))
+    previous_scheduled = models.DateTimeField(default=default_scheduled)
+    next_scheduled = models.DateTimeField(default=default_scheduled)
 
     objects = LocalizedRecurrenceManager()
 
@@ -221,15 +230,23 @@ class LocalizedRecurrence(models.Model):
         return next_scheduled_utc
 
 
+def _prepare_datetime_field_value(value, make_aware=None):
+    if make_aware is None:
+        make_aware = settings.USE_TZ
+    if value is None or not make_aware or timezone.is_aware(value):
+        return value
+    return timezone.make_aware(value)
+
+
 def _update_schedule(recurrences, time=None):
-        """
-        Update the schedule times for all the provided recurrences.
-        """
-        time = time or datetime.utcnow()
-        for recurrence in recurrences:
-            recurrence.next_scheduled = recurrence.utc_of_next_schedule(time)
-            recurrence.previous_scheduled = time
-            recurrence.save()
+    """
+    Update the schedule times for all the provided recurrences.
+    """
+    time = time or datetime.utcnow()
+    for recurrence in recurrences:
+        recurrence.next_scheduled = _prepare_datetime_field_value(recurrence.utc_of_next_schedule(time))
+        recurrence.previous_scheduled = _prepare_datetime_field_value(time)
+        recurrence.save()
 
 
 def _replace_with_offset(dt, offset, interval):
