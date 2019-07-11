@@ -31,7 +31,6 @@ setup(
     classifiers=[
         'Environment :: Web Environment',
         'Framework :: Django',
-        'Framework :: Django :: 1.11',
         'Framework :: Django :: 2.0',
         'Framework :: Django :: 2.1',
         'Framework :: Django :: 2.2',
@@ -45,9 +44,9 @@ setup(
         'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
     ],
     install_requires=[
-        'Django>=1.11',
+        'Django>=2.0',
         'ambition-django-timezone-field>=2.0.2',
-        'fleming>=0.4.6',
+        'fleming>=0.5.0',
         'python-dateutil',
         'pytz',
     ],
