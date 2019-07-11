@@ -222,14 +222,14 @@ class LocalizedRecurrence(models.Model):
 
 
 def _update_schedule(recurrences, time=None):
-        """
-        Update the schedule times for all the provided recurrences.
-        """
-        time = time or datetime.utcnow()
-        for recurrence in recurrences:
-            recurrence.next_scheduled = recurrence.utc_of_next_schedule(time)
-            recurrence.previous_scheduled = time
-            recurrence.save()
+    """
+    Update the schedule times for all the provided recurrences.
+    """
+    time = time or datetime.utcnow()
+    for recurrence in recurrences:
+        recurrence.next_scheduled = recurrence.utc_of_next_schedule(time)
+        recurrence.previous_scheduled = time
+        recurrence.save()
 
 
 def _replace_with_offset(dt, offset, interval):
