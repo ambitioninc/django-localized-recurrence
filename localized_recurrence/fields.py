@@ -118,8 +118,8 @@ def parse_timedelta_string(string):
     datetime.timedelta.__str__ returns a string in the form [D day[s],
     ][H]H:MM:SS[.UUUUUU], where D is negative for negative t.
     """
-    days_re = "(?P<days>-?[0-9]*) days?, (?P<hours>[0-9]+):(?P<minutes>[0-9]+):(?P<seconds>[0-9]+\.?[0-9]*)"
-    no_days_re = "(?P<hours>[0-9]+):(?P<minutes>[0-9]+):(?P<seconds>[0-9]+\.?[0-9]*)"
+    days_re = r"(?P<days>-?[0-9]*) days?, (?P<hours>[0-9]+):(?P<minutes>[0-9]+):(?P<seconds>[0-9]+\.?[0-9]*)"
+    no_days_re = r"(?P<hours>[0-9]+):(?P<minutes>[0-9]+):(?P<seconds>[0-9]+\.?[0-9]*)"
     match_days = re.match(days_re, string)
     match_no_days = re.match(no_days_re, string)
     if match_days:
