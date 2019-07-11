@@ -13,15 +13,12 @@ and update their next scheduled time.
 Installation
 ------------
 This packages is currently available through Pypi and github. To
-install from Pypi using ``pip`` (recommended):
-
-.. code-block:: none
+install from Pypi using ``pip`` (recommended)::
 
     pip install django-localized-recurrence
 
-To install the development version from github:
 
-.. code-block:: none
+To install the development version from github::
 
     pip install git+git://github.com/ambitioninc/django-localized-recurrence.git@develop
 
