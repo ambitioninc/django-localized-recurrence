@@ -3,17 +3,13 @@ Provides the ability to run test on a standalone Django app.
 """
 import sys
 from optparse import OptionParser
-
-import django
-
 from settings import configure_settings
 
 
 # Configure the default settings
 configure_settings()
-django.setup()
 
-# Django nose must be imported here because it depends on the settings being configured first
+# Django nose must be imported here since it depends on the settings being configured
 from django_nose import NoseTestSuiteRunner
 
 
