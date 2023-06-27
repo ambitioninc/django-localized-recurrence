@@ -1,0 +1,4 @@
+Django>=3.2
+fleming>=0.6.0
+python-dateutil
+pytz
