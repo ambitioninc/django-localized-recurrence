@@ -2,13 +2,10 @@ import unittest
 from datetime import timedelta
 
 import django
-import six
-if six.PY3:  # pragma: no cover
-    from importlib import reload
+from importlib import reload
+from unittest.mock import MagicMock, patch
 
-from mock import MagicMock, patch
-
-from .. import fields
+from localized_recurrence import fields
 
 
 class DurationFieldToPythonTest(unittest.TestCase):
