@@ -2,7 +2,7 @@ from datetime import timedelta
 import re
 
 from django.db.models.fields import IntegerField
-from ambition_utils.fields import CastOnAssignDescriptor, CastOnAssignFieldMixin
+from ambition_utils.fields import CastOnAssignFieldMixin
 
 
 class DurationField(CastOnAssignFieldMixin, IntegerField):
