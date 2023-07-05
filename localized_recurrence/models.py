@@ -3,7 +3,7 @@ import calendar
 
 from dateutil.relativedelta import relativedelta
 from django.db import models
-from timezone_field import TimeZoneField
+from ambition_utils.fields import TimeZoneField
 import fleming
 import pytz
 
